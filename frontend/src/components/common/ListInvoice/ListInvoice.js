@@ -1,314 +1,104 @@
-import clsx from "clsx";
-import style from "./ListInvoice.module.scss";
-import Button from "../Button";
-import {
-    AiOutlineCheckCircle,
-    AiOutlineCloseCircle,
-    AiOutlineDelete,
-    AiOutlineEdit,
-    AiOutlinePayCircle,
-} from "react-icons/ai";
-import RoomDisplay from "../RoomDisplay/RoomDisplay";
-import dayjs from "dayjs";
-import { useEffect, useState } from "react";
-import Popup from "../Popup/Popup";
-import Input from "../Input";
-import { toast } from "react-toastify";
-import dynamic from "next/dynamic"; // <-- Cần import này
+import { useState } from 'react';
+import Link from 'next/link';
+import clsx from 'clsx';
+import { toast } from 'react-toastify';
+import { Button, Dialog, StarRating } from '@/components/ui';
+import useBookingActions from '@/hooks/useBookingActions';
+import { createFeedback } from '@/services/feedback';
+import { refreshBookings } from '@/services/booking';
+import { BOOKING_STATUS, canCustomerCancel, canPay } from '@/constants/booking';
+import { formatMoney } from '@/function/formatMoney';
+import { dayKeyVN } from '@/lib/booking.mjs';
+import style from './ListInvoice.module.scss';
 
-// Thay thế dòng:
-// import LoadingFullPage from '@/components/common/LoadingFullPage/loadingFullPage';
+const TONE = {
+    [BOOKING_STATUS.SUCCESS]: 'ok',
+    [BOOKING_STATUS.DONE]: 'done',
+    [BOOKING_STATUS.PENDING]: 'warn',
+    [BOOKING_STATUS.CANCELLED]: 'off',
+    [BOOKING_STATUS.FAILED]: 'off',
+};
 
-// Bằng Dynamic Import:
-const DynamicLoadingFullPage = dynamic(
-    () => import("@/components/common/LoadingFullPage/loadingFullPage"),
-    {
-        ssr: false, // Vẫn là key để tránh lỗi document is not defined
-        loading: () => null,
-    },
-);
-import { createFeedback } from "@/services/feedback";
-import useBookingActions from "@/hooks/useBookingActions";
-import { canCustomerCancel, canPay } from "@/constants/booking";
-import { formatMoney } from "@/function/formatMoney";
-import { useRouter } from "next/router";
-
+/** Một đơn trong lịch sử: tóm tắt + thao tác hợp lệ (thanh toán, hủy, đánh giá). */
 const ListInvoice = ({ booking }) => {
-    const [loading, setLoading] = useState(false);
-    const [feedback, setFeedback] = useState("");
-    const [isPopupFeedback, setIsPopUpFeedback] = useState(false);
-    const [feedbackRating, setFeedbackRating] = useState(0);
-    const [hoverRating, setHoverRating] = useState(0);
-    const totalStars = 5;
-    const [isPopupPaymentStatus, setIsPopupPaymentStatus] = useState(false);
-    const router = useRouter();
-    const { status } = router.query;
     const { cancel, pay } = useBookingActions(booking);
+    const [reviewing, setReviewing] = useState(false);
+    const [rating, setRating] = useState(0);
+    const [comment, setComment] = useState('');
+    const [sending, setSending] = useState(false);
 
-    useEffect(() => {
-        if (status) {
-            setIsPopupPaymentStatus(true);
-            const newPath = router.pathname;
-            router.replace(newPath, newPath, { shallow: true });
-        }
-    }, [status, router]);
+    const slots = booking.time_slots || [];
+    const canReview = booking.status === BOOKING_STATUS.DONE && !booking.isReviewed;
 
-    const handleFeedback = async () => {
-        setLoading(true);
-        if (!booking?.room?.branch?._id || !booking?._id) {
-            toast.error("Thông tin booking không đầy đủ để gửi đánh giá.");
-            setLoading(false);
-            return;
-        }
-
-        const newFeedback = {
-            bookingId: booking._id,
-            rating: feedbackRating,
-            comment: feedback,
-        };
-
-        try {
-            const result = await createFeedback(newFeedback);
-            if (result.success) {
-                toast.success(result.message);
-                setIsPopUpFeedback(false);
-                setFeedbackRating(0);
-                setHoverRating(0);
-                setFeedback("");
-            } else {
-                toast.error(result.message);
-            }
-        } catch {
-            toast.error("Có lỗi xảy ra khi gửi đánh giá.");
-        } finally {
-            setLoading(false);
-        }
+    const sendReview = async (e) => {
+        e.preventDefault();
+        setSending(true);
+        const result = await createFeedback({ bookingId: booking._id, rating, comment: comment.trim() });
+        setSending(false);
+        if (!result.success) return toast.error(result.message);
+        toast.success('Cảm ơn bạn đã đánh giá');
+        setReviewing(false);
+        refreshBookings();
     };
 
-    const handleStarClick = (value) => setFeedbackRating(value);
-    const handleStarMouseEnter = (value) => setHoverRating(value);
-    const handleStarMouseLeave = () => setHoverRating(0);
-    const handleFeedbackTextChange = (e) => setFeedback(e.target.value);
-
-    if (!booking) {
-        return (
-            <div className={style.listInvoiceItem}>
-                <p>Thông tin đơn đặt chỗ không có sẵn.</p>
-            </div>
-        );
-    }
-
     return (
-        <>
-            {isPopupPaymentStatus && (
-                <Popup handleClose={() => setIsPopupPaymentStatus(false)}>
-                    <div className={style.popupPayment}>
-                        {status === "PAID" ? (
-                            <>
-                                <AiOutlineCheckCircle
-                                    className={style.success}
-                                />
-                                <p>Thanh toán thành công</p>
-                                <p>Đơn hàng của bạn đã được cập nhật.</p>
-                            </>
-                        ) : (
-                            <>
-                                <AiOutlineCloseCircle
-                                    className={style.cancel}
-                                />
-                                <p>Thanh toán thất bại</p>
-                                <p>Vui lòng thử lại hoặc liên hệ hỗ trợ.</p>
-                            </>
-                        )}
-                        <Button
-                            rounded_10
-                            yellowLinear
-                            onClick={() => setIsPopupPaymentStatus(false)}
-                            style={{ marginTop: "20px" }}>
-                            Đóng
-                        </Button>
-                    </div>
-                </Popup>
-            )}
-
-            {loading && <DynamicLoadingFullPage />}
-
-            {isPopupFeedback && (
-                <Popup
-                    dark
-                    handleClose={() => {
-                        setIsPopUpFeedback(false);
-                        setFeedbackRating(0);
-                        setHoverRating(0);
-                        setFeedback("");
-                    }}>
-                    <div className={style.formPopup}>
-                        <div className={style.title}>Viết đánh giá</div>
-                        <div className={style.groupItem}>
-                            <label>Cơ sở</label>
-                            <Input
-                                rounded_10
-                                outLine
-                                value={
-                                    booking?.room?.branch?.name ||
-                                    "Không xác định"
-                                }
-                                readOnly
-                            />
-                        </div>
-                        <div className={style.groupItem}>
-                            <label>Đánh giá: </label>
-                            <div className={style.stars}>
-                                {[...Array(totalStars)].map((_, index) => {
-                                    const starValue = index + 1;
-                                    return (
-                                        <span
-                                            key={starValue}
-                                            className={clsx(style.star, {
-                                                [style.filled]:
-                                                    starValue <=
-                                                    (hoverRating ||
-                                                        feedbackRating),
-                                            })}
-                                            onClick={() =>
-                                                handleStarClick(starValue)
-                                            }
-                                            onMouseEnter={() =>
-                                                handleStarMouseEnter(starValue)
-                                            }
-                                            onMouseLeave={handleStarMouseLeave}
-                                            role="button"
-                                            tabIndex={0}
-                                            onKeyDown={(e) => {
-                                                if (
-                                                    e.key === "Enter" ||
-                                                    e.key === " "
-                                                ) {
-                                                    handleStarClick(starValue);
-                                                }
-                                            }}
-                                            aria-label={`Đánh giá ${starValue} sao`}>
-                                            ★
-                                        </span>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                        <div className={style.groupItem}>
-                            <textarea
-                                className={style.feedbackTextarea}
-                                placeholder="Chia sẻ cảm nhận của bạn về dịch vụ..."
-                                rows="5"
-                                value={feedback}
-                                onChange={handleFeedbackTextChange}></textarea>
-                        </div>
-                        <Button
-                            rounded_10
-                            blue
-                            w_fit
-                            onClick={handleFeedback}
-                            disabled={
-                                feedbackRating === 0 ||
-                                feedback.trim() === "" ||
-                                feedback === "<p></p>"
-                            }
-                            className={style.btnAdd}>
-                            Gửi đánh giá
-                        </Button>
-                    </div>
-                </Popup>
-            )}
-
-            <div className={style.listInvoiceItem}>
-                <div className={clsx(style.column, style.colRoom)}>
-                    <RoomDisplay
-                        roomName={booking?.room?.name}
-                        roomType={booking?.room?.type?.name}
-                    />
-                </div>
-                <div className={clsx(style.column, style.colInfor)}>
-                    <div className={style.item}>
-                        Mã đơn: <p>{booking?.id_booking || "N/A"}</p>
-                    </div>
-                    <div className={style.item}>
-                        Số điện thoại: <p>{booking?.phone || "N/A"}</p>
-                    </div>
-                    <div className={style.item}>
-                        Ngày:{" "}
-                        <p>
-                            {booking?.date
-                                ? dayjs(booking.date).format("DD/MM/YYYY")
-                                : "N/A"}
-                        </p>
-                    </div>
-                </div>
-                <div className={clsx(style.column, style.colInfor)}>
-                    <div className={style.item}>
-                        Cơ sở:{" "}
-                        <p>{booking?.room?.branch?.name || "Không xác định"}</p>
-                    </div>
-                    <div className={style.item}>
-                        Từ:{" "}
-                        <p>{booking?.time_slots?.[0]?.start_time || "N/A"}</p>{" "}
-                        đến:{" "}
-                        <p>{booking?.time_slots?.at(-1)?.end_time || "N/A"}</p>
-                    </div>
-                    <div className={style.item}>
-                        Combo: <p>{booking?.combo?.name || "Không có"}</p>
-                    </div>
-                </div>
-                <div className={clsx(style.column, style.colIspay)}>
-                    <p>{formatMoney(booking?.total_money)}</p>
-                    <div className={style.item}>
-                        Mã giảm giá: <p>{booking?.promotion || "Không"}</p>
-                    </div>
-                    <p>{booking?.isPay || "Chưa rõ"}</p>
-                </div>
-                <div className={clsx(style.column, style.colStatus)}>
-                    Trạng thái <p>{booking?.status || "Chưa rõ"}</p>
-                </div>
-                <div className={clsx(style.colAction, style.column)}>
-                    {canPay(booking) && (
-                        <Button
-                            rounded_10
-                            blue
-                            icon={<AiOutlinePayCircle />}
-                            onClick={() => pay()}>
-                            Thanh toán
-                        </Button>
-                    )}
-                    {booking?.status === "HOÀN THÀNH" ? (
-                        booking?.isReviewed ? (
-                            <Button
-                                rounded_10
-                                yellowLinear
-                                icon={<AiOutlineCheckCircle />}
-                                disabled>
-                                Bạn đã đánh giá
-                            </Button>
-                        ) : (
-                            <Button
-                                rounded_10
-                                yellowLinear
-                                icon={<AiOutlineEdit />}
-                                onClick={() => setIsPopUpFeedback(true)}>
-                                Đánh giá
-                            </Button>
-                        )
-                    ) : (
-                        canCustomerCancel(booking) && (
-                            <Button
-                                rounded_10
-                                red
-                                icon={<AiOutlineDelete />}
-                                onClick={cancel}>
-                                Hủy đơn
-                            </Button>
-                        )
-                    )}
-                </div>
+        <article className={style.row}>
+            <div className={style.when}>
+                <strong>{dayKeyVN(new Date(booking.date)).split('-').reverse().join('/')}</strong>
+                <span>
+                    {slots[0]?.start_time} đến {slots.at(-1)?.end_time}
+                </span>
             </div>
-        </>
+            <div className={style.what}>
+                <Link href={`/bookRoom/${booking.id_booking}`} className={style.code}>
+                    Vé #{booking.id_booking}
+                </Link>
+                <span>
+                    {booking.room?.branch?.name}, phòng {booking.room?.name}
+                    {booking.film?.name ? `, ${booking.film.name}` : ''}
+                </span>
+            </div>
+            <div className={style.money}>
+                <strong>{formatMoney(booking.total_money)}</strong>
+                <span className={clsx(style.status, style[TONE[booking.status]])}>{booking.status}</span>
+                <span className={style.pay}>{booking.isPay}</span>
+            </div>
+            <div className={style.actions}>
+                {canPay(booking) && <Button onClick={() => pay()}>Thanh toán</Button>}
+                {canReview && (
+                    <Button variant="outline" onClick={() => setReviewing(true)}>
+                        Đánh giá
+                    </Button>
+                )}
+                {booking.isReviewed && <span className={style.reviewed}>Đã đánh giá</span>}
+                {canCustomerCancel(booking) && (
+                    <Button variant="ghost" onClick={cancel}>
+                        Hủy đơn
+                    </Button>
+                )}
+            </div>
+
+            <Dialog open={reviewing} onClose={() => setReviewing(false)} title="Đánh giá buổi xem">
+                <form className={style.review} onSubmit={sendReview}>
+                    <p className={style.muted}>
+                        {booking.room?.branch?.name}, phòng {booking.room?.name}
+                    </p>
+                    <StarRating value={rating} onChange={setRating} />
+                    <label className={style.comment}>
+                        Cảm nhận của bạn
+                        <textarea
+                            rows={4}
+                            value={comment}
+                            onChange={(e) => setComment(e.target.value)}
+                            maxLength={1000}
+                        />
+                    </label>
+                    <Button type="submit" block loading={sending} disabled={!rating}>
+                        Gửi đánh giá
+                    </Button>
+                </form>
+            </Dialog>
+        </article>
     );
 };
 

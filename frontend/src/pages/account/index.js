@@ -1,20 +1,14 @@
 import PageHead from '@/components/common/PageHead/PageHead';
-import LayoutAdmin from '@/layout/LayoutAdmin/LayoutAdmin';
+import LayoutAccount from '@/layout/LayoutAccount/LayoutAccount';
 import AccountPage from '@/components/page/User/AccountPage';
 
-const title = 'Tài khoản';
-export default function Account() {
+export default function Page() {
     return (
         <>
-            <PageHead title={title} />
+            <PageHead title="Tài khoản" />
             <AccountPage />
         </>
     );
 }
-Account.getLayout = function getLayout(page) {
-    return (
-        <LayoutAdmin user dark title={title}>
-            {page}
-        </LayoutAdmin>
-    );
-};
+
+Page.getLayout = (page) => <LayoutAccount title="Tài khoản">{page}</LayoutAccount>;

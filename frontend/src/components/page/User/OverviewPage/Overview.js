@@ -1,55 +1,64 @@
-import Button from '@/components/common/Button';
-import styles from './Overview.module.scss';
-import {
-    AiOutlineCheckCircle,
-    AiOutlineCloseCircle,
-    AiOutlineDelete,
-    AiOutlineEdit,
-    AiOutlineHourglass,
-} from 'react-icons/ai';
-import iconRoom from '@public/static/img/Group_1000006539.svg';
-import clsx from 'clsx';
-import Image from 'next/image';
-import { useEffect, useState } from 'react';
+import { Button, Reveal, Skeleton } from '@/components/ui';
 import ListInvoice from '@/components/common/ListInvoice';
-import { useAllBookingByEmailCurrent, useBookingStatsByEmail } from '@/services/booking';
-import dayjs from 'dayjs';
+import { useAllBookingByEmail, useBookingStatsByEmail } from '@/services/booking';
+import { useUserData } from '@/services/account';
+import { BOOKING_STATUS } from '@/constants/booking';
+import { dayKeyVN } from '@/lib/booking.mjs';
+import { PATH } from '@/constants/config';
+import styles from './Overview.module.scss';
 
+/** Tổng quan: số liệu nhanh + các đơn sắp tới. */
 const OverviewPage = () => {
-    const { booking: allBookingCurrent } = useAllBookingByEmailCurrent();
-    const { booking: bookingStats } = useBookingStatsByEmail();
+    const { user } = useUserData();
+    const { booking: stats } = useBookingStatsByEmail();
+    const { booking: bookings, isLoading } = useAllBookingByEmail();
+    const today = dayKeyVN();
+    const upcoming = (bookings || [])
+        .filter(
+            (b) =>
+                dayKeyVN(new Date(b.date)) >= today &&
+                [BOOKING_STATUS.SUCCESS, BOOKING_STATUS.PENDING].includes(b.status),
+        )
+        .slice(0, 3);
+
+    const tiles = [
+        ['Tổng số đơn', stats?.totalBooking],
+        ['Đã hoàn thành', stats?.completedBookingsToday],
+        ['Đã hủy', stats?.cancelledBookingsToday],
+    ];
 
     return (
-        <div className={styles.container}>
-            <div className={styles.statistics}>
-                <h1>Thống kê đơn đặt phòng</h1>
-                <div className={styles.groupBoxes}>
-                    <div className={styles.boxItem}>
-                        <AiOutlineHourglass />
-                        <p>Số đơn hôm nay</p>
-                        <p className={styles.number}>{bookingStats?.totalBookingsToday}</p>
+        <div className={styles.page}>
+            <p className={styles.hello}>Chào {user?.name}, đây là các buổi xem sắp tới của bạn.</p>
+            <Reveal as="dl" className={styles.tiles}>
+                {tiles.map(([label, value]) => (
+                    <div key={label} className={styles.tile}>
+                        <dt>{label}</dt>
+                        <dd>{value ?? '–'}</dd>
                     </div>
-                    <div className={styles.boxItem}>
-                        <AiOutlineCheckCircle />
-                        <p>Số đơn đã hoàn thành</p>
-                        <p className={styles.number}>{bookingStats?.completedBookingsToday}</p>
-                    </div>
-                    <div className={styles.boxItem}>
-                        <AiOutlineCloseCircle />
-                        <p>Số đơn đã hủy </p>
-                        <p className={styles.number}>{bookingStats?.cancelledBookingsToday}</p>
-                    </div>
-                </div>
-            </div>
-
-            <div className={styles.listInvoiceContainer}>
-                <h1>Đơn đặt phòng hôm nay</h1>
-
-                {allBookingCurrent?.map((booking) => (
-                    <ListInvoice key={booking._id} booking={booking} />
                 ))}
-            </div>
+            </Reveal>
+
+            <section aria-labelledby="upcoming-title" className={styles.section}>
+                <h2 id="upcoming-title">Sắp tới</h2>
+                {isLoading && <Skeleton h={86} radius={14} />}
+                {!isLoading && !upcoming.length && (
+                    <div className={styles.empty}>
+                        <p>Bạn chưa có buổi xem nào sắp tới.</p>
+                        <Button href={PATH.BookRoom}>Đặt phòng</Button>
+                    </div>
+                )}
+                {upcoming.map((b) => (
+                    <ListInvoice key={b._id} booking={b} />
+                ))}
+                {upcoming.length > 0 && (
+                    <Button variant="ghost" href={PATH.InvoiceDetail}>
+                        Xem toàn bộ lịch sử
+                    </Button>
+                )}
+            </section>
         </div>
     );
 };
+
 export default OverviewPage;

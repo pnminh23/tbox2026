@@ -1,62 +1,70 @@
-.container {
-    width: 100%;
+@use 'motion' as *;
+
+.wrap {
     display: flex;
     flex-direction: column;
     gap: 20px;
 }
 
-.filter {
-    display: inline-flex;
-    justify-content: space-between;
+.toolbar {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.views {
+    display: flex;
+    gap: 6px;
+    flex: 1 1 auto;
+}
+
+.view {
+    @include pressable;
+    min-height: 44px;
+    padding: 0 16px;
+    border-radius: 999px;
+    border: 1px solid var(--seam);
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.active {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: var(--ink);
+}
+
+.input input {
+    min-height: 44px;
+    padding: 0 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--seam);
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+    color-scheme: dark;
+}
+
+.list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.empty {
+    padding: 48px 24px;
+    border: 1px dashed var(--seam);
+    border-radius: var(--radius-lg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
     p {
-        white-space: nowrap;
-    }
-
-    .selection {
-        width: 200px;
-    }
-    .input {
-        width: 200px;
-    }
-    .search {
-        width: fit-content;
-    }
-    .calendar {
-        width: 250px;
-    }
-}
-
-.listInvoiceContainer {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    width: 100%;
-    height: fit-content;
-    min-height: 500px;
-    background-color: var(--dark-secondary);
-    padding: 20px;
-    border-radius: 10px;
-}
-
-.flexColumn {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-.flexRow {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 10px;
-}
-.loadingItem {
-    height: 400px;
-}
-.filterButtonsContainer {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    .filterButton {
-        transition: all 0.3s ease-in-out;
+        margin: 0;
+        color: var(--text-muted);
     }
 }

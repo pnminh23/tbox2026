@@ -1,0 +1,57 @@
+@use 'motion' as *;
+
+.page {
+    @include container;
+    padding-top: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    h1 {
+        @include display(clamp(40px, 6vw, 64px));
+        margin: 0;
+    }
+}
+
+.tabs {
+    display: flex;
+    gap: 6px;
+    border-bottom: 1px solid var(--seam);
+    overflow-x: auto;
+}
+
+.tab {
+    position: relative;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    min-height: 48px;
+    padding: 0 14px;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-decoration: none;
+    &::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: -1px;
+        height: 3px;
+        background: var(--gold);
+        transform: scaleX(0);
+        transition: transform 0.25s var(--ease-out);
+    }
+    &:hover {
+        color: var(--text);
+    }
+}
+
+.active {
+    color: var(--text);
+    &::after {
+        transform: scaleX(1);
+    }
+}
+
+.muted {
+    color: var(--text-muted);
+}

@@ -1,20 +1,14 @@
 import PageHead from '@/components/common/PageHead/PageHead';
+import LayoutAccount from '@/layout/LayoutAccount/LayoutAccount';
 import OverviewPage from '@/components/page/User/OverviewPage';
-import LayoutAdmin from '@/layout/LayoutAdmin/LayoutAdmin';
 
-const title = 'Tổng quan tài khoản';
-export default function Profile() {
+export default function Page() {
     return (
         <>
-            <PageHead title={title} />
+            <PageHead title="Tổng quan" />
             <OverviewPage />
         </>
     );
 }
-Profile.getLayout = function getLayout(page) {
-    return (
-        <LayoutAdmin user dark title={title}>
-            {page}
-        </LayoutAdmin>
-    );
-};
+
+Page.getLayout = (page) => <LayoutAccount title="Tổng quan">{page}</LayoutAccount>;

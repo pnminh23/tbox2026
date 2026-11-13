@@ -1,0 +1,46 @@
+.stars {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    legend {
+        margin-bottom: 8px;
+        font-weight: 600;
+        font-size: 14px;
+    }
+}
+
+.row {
+    display: flex;
+    gap: 4px;
+    label {
+        position: relative;
+        width: 44px;
+        height: 44px;
+        display: grid;
+        place-items: center;
+        font-size: 30px;
+        color: var(--seam);
+        cursor: pointer;
+        transition:
+            color 0.15s,
+            transform 0.15s;
+        &:hover {
+            transform: scale(1.12);
+        }
+    }
+    input {
+        position: absolute;
+        opacity: 0;
+        inset: 0;
+        cursor: pointer;
+    }
+    label:has(input:focus-visible) {
+        outline: 3px solid var(--gold);
+        outline-offset: 2px;
+        border-radius: 8px;
+    }
+}
+
+.on {
+    color: var(--gold) !important;
+}

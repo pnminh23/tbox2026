@@ -1,34 +1,58 @@
-.container {
+.form {
+    max-width: 640px;
     display: flex;
-    padding: 24px;
     flex-direction: column;
+    gap: 24px;
+}
 
-    gap: 10px;
-    border-radius: 10px;
-    background: #343434;
-    .groupItem {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        flex: 1 0 0;
-        .label {
-            font-weight: 700;
-        }
-        input {
-            width: max-content;
-        }
+.avatar {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    img {
+        border-radius: 50%;
+        object-fit: cover;
     }
 }
 
-.row {
+.upload {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 16px;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--gold);
+    font-weight: 700;
+    cursor: pointer;
+    &:hover {
+        background: var(--gold);
+        color: var(--ink);
+    }
+    &:has(input:focus-visible) {
+        outline: 3px solid var(--gold);
+        outline-offset: 3px;
+    }
+}
+
+.fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    > :last-child {
+        grid-column: 1 / -1;
+    }
+    @media (max-width: 600px) {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.actions {
     display: flex;
     align-items: center;
     gap: 20px;
-    align-self: stretch;
-}
-
-.changePassword {
-    font-weight: 700;
-    cursor: pointer;
-    color: var(--hightlight);
+    a {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+    }
 }

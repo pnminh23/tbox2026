@@ -1,99 +1,139 @@
-.listInvoiceItem {
-    width: 100%;
-    padding: 15px 30px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    background: var(--dark-primary);
-    justify-content: space-between;
-    .column {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        width: fit-content;
-    }
-    .colAction {
-        align-items: center;
-        justify-content: center;
-    }
-    .colRoom {
-        width: 70px;
-    }
-    .colInfor {
-        width: 200px;
-    }
-    .colIspay {
-        width: 200px;
-    }
-    .colStatus {
-        width: 200px;
-    }
-    .colAction {
-        width: 150px;
-    }
+@use 'motion' as *;
 
-    .item {
-        display: flex;
-        gap: 5px;
-        color: var(--grey);
-        p {
-            color: #fff;
+.row {
+    display: grid;
+    grid-template-columns: 130px minmax(0, 1fr) auto auto;
+    gap: 20px;
+    align-items: center;
+    padding: 18px 20px;
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    animation: fade-up 0.35s var(--ease-out) backwards;
+    // Mobile: ngày + tiền trên cùng, thông tin vé, rồi thao tác
+    @media (max-width: 900px) {
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas: 'when money' 'what what' 'actions actions';
+        gap: 12px;
+        .when {
+            grid-area: when;
+        }
+        .what {
+            grid-area: what;
+        }
+        .money {
+            grid-area: money;
+        }
+        .actions {
+            grid-area: actions;
         }
     }
 }
-.formPopup {
-    width: 700px;
+
+.when,
+.what,
+.money {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    .title {
-        text-align: center;
-        font-size: 20px;
-        font-weight: 500;
-    }
-    .groupItem {
-        flex: auto;
-        display: flex;
-        flex-direction: column;
-        label {
-            font-weight: 500;
-        }
-    }
-    .row {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-    .btnAdd {
-        margin-top: 10px;
-        margin-left: auto;
+    gap: 2px;
+    min-width: 0;
+    span {
+        color: var(--text-muted);
+        font-size: 14px;
     }
 }
 
-.stars {
+.when strong {
+    font-size: 17px;
+}
+
+.code {
+    color: var(--text);
+    font-weight: 700;
+    text-decoration: none;
+    &:hover {
+        color: var(--gold);
+        text-decoration: underline;
+        text-underline-offset: 4px;
+    }
+}
+
+.money {
+    align-items: flex-end;
+    text-align: right;
+}
+
+.status {
+    margin-top: 2px;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 12px !important;
+    font-weight: 700;
+}
+
+.ok {
+    background: rgba(78, 203, 113, 0.15);
+    color: #8be0a4 !important;
+}
+.done {
+    background: rgba(243, 184, 23, 0.15);
+    color: var(--gold) !important;
+}
+.warn {
+    background: rgba(255, 138, 122, 0.15);
+    color: var(--danger-text) !important;
+}
+.off {
+    background: var(--seam);
+}
+
+.pay {
+    font-size: 12px !important;
+}
+
+.actions {
     display: flex;
-    gap: 5px; // Khoảng cách giữa các ngôi sao
-    font-size: 2.5rem; // Kích thước ngôi sao
-    color: #ccc; // Màu sao mặc định (chưa được chọn/hover)
-    cursor: pointer;
-    .star {
-        transition: color 0.2s ease-in-out, transform 0.1s ease-in-out;
-        &:hover {
-            transform: scale(1.1); // Hiệu ứng phóng to nhẹ khi hover
-        }
+    gap: 8px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    &:empty {
+        display: none;
     }
-
-    .star.filled {
-        color: #f5a623; // Màu sao khi được chọn hoặc hover
+    @media (max-width: 900px) {
+        justify-content: flex-start;
     }
-
-    /* Tùy chọn: Thêm focus style cho accessibility */
 }
-.feedbackTextarea {
-    padding: 6px 10px;
-    border-radius: 10px;
-    &::selection {
-        background: var(--dark);
-        color: #fff;
+
+.reviewed {
+    color: var(--text-muted);
+    font-size: 14px;
+}
+
+.review {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.muted {
+    margin: 0;
+    color: var(--text-muted);
+}
+
+.comment {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    textarea {
+        padding: 12px 14px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--seam);
+        background: var(--surface);
+        color: var(--text);
+        font: inherit;
+        font-weight: 400;
+        font-size: 16px;
+        resize: vertical;
     }
 }

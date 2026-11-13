@@ -1,208 +1,95 @@
-import { useEffect, useMemo, useState } from "react";
-import style from "./AllBooking.module.scss";
-import { toast } from "react-toastify";
-import dayjs from "dayjs";
+import { useMemo, useState } from 'react';
+import clsx from 'clsx';
+import { Button, Skeleton } from '@/components/ui';
+import ListInvoice from '@/components/common/ListInvoice';
+import { useAllBookingByEmail } from '@/services/booking';
+import { BOOKING_STATUS } from '@/constants/booking';
+import { dayKeyVN } from '@/lib/booking.mjs';
+import { PATH } from '@/constants/config';
+import style from './AllBooking.module.scss';
 
-// Services & Hooks
-import {
-    useAllBookingByEmail,
-    useAllBookingByEmailAndMonth,
-    useAllBookingByEmailCurrent,
-} from "@/services/booking";
+const UPCOMING = [BOOKING_STATUS.SUCCESS, BOOKING_STATUS.PENDING];
+const VIEWS = [
+    ['upcoming', 'Sắp tới'],
+    ['past', 'Đã qua'],
+    ['all', 'Tất cả'],
+];
 
-// Components
-import Button from "@/components/common/Button";
-import Input from "@/components/common/Input";
-import Calendar from "@/components/common/Calender";
-import ListInvoice from "@/components/common/ListInvoice";
-import dynamic from "next/dynamic";
+/** Lịch sử đặt phòng: 1 nguồn dữ liệu, lọc trực tiếp khi render. */
+const AllBooking = () => {
+    const { booking: bookings, isLoading, isError } = useAllBookingByEmail();
+    const [view, setView] = useState('upcoming');
+    const [month, setMonth] = useState('');
+    const [code, setCode] = useState('');
+    const today = dayKeyVN();
 
-// Import tĩnh bị lỗi:
-// import LoadingItem from '@/components/common/LoadingItem/LoadingItem';
-// import LoadingFullPage from '@/components/common/LoadingFullPage/loadingFullPage';
-
-// Thay thế bằng:
-const DynamicLoadingItem = dynamic(
-    () => import("@/components/common/LoadingItem/LoadingItem"),
-    { ssr: false }
-);
-import { AiOutlineSearch } from "react-icons/ai";
-
-const InvoiceDetailPage = () => {
-    // === State Management ===
-    const [activeFilter, setActiveFilter] = useState("Tất cả các đơn");
-    const [selectedDateMonth, setSelectedDateMonth] = useState(null);
-    const [apiMonth, setApiMonth] = useState(null);
-    const [apiYear, setApiYear] = useState(null);
-    // State mới cho tìm kiếm
-    const [searchInput, setSearchInput] = useState("");
-    const [activeSearchQuery, setActiveSearchQuery] = useState("");
-
-    // === Data Fetching ===
-    const { booking: allBookingCurrent, isLoading: loadingBookingCurrent } =
-        useAllBookingByEmailCurrent();
-    const { booking: allBooking, isLoading: loadingBooking } =
-        useAllBookingByEmail();
-    const { booking: allBookingByMonth, isLoading: loadingBookingByMonth } =
-        useAllBookingByEmailAndMonth(apiMonth, apiYear);
-
-    // === Event Handlers & Effects ===
-    useEffect(() => {
-        if (selectedDateMonth) {
-            const monthForApi = selectedDateMonth.getMonth() + 1;
-            const yearForApi = selectedDateMonth.getFullYear();
-            setApiMonth(monthForApi);
-            setApiYear(yearForApi);
-        } else {
-            setApiMonth(null);
-            setApiYear(null);
-        }
-    }, [selectedDateMonth]);
-
-    const handleFilterButtonClick = (filterType) => {
-        setActiveFilter(filterType);
-    };
-
-    const handlePerformSearch = () => {
-        setActiveSearchQuery(searchInput);
-    };
-
-    // === Derived Data (Lọc và chọn dữ liệu để hiển thị) ===
-    const displayBookings = useMemo(() => {
-        let sourceData = [];
-
-        // 1. Chọn nguồn dữ liệu dựa trên filter đang active
-        switch (activeFilter) {
-            case "Đơn hiện tại":
-                sourceData = allBookingCurrent || [];
-                break;
-            case "Theo tháng":
-                sourceData = allBookingByMonth || [];
-                break;
-            case "Tất cả các đơn":
-            default:
-                sourceData = allBooking || [];
-                break;
-        }
-
-        // 2. Nếu có truy vấn tìm kiếm, lọc tiếp trên nguồn dữ liệu đã chọn
-        if (!activeSearchQuery) {
-            return sourceData;
-        }
-
-        const query = activeSearchQuery.toLowerCase();
-        return sourceData.filter((booking) =>
-            booking.id_booking?.toString().toLowerCase().includes(query)
-        );
-    }, [
-        activeFilter,
-        allBooking,
-        allBookingCurrent,
-        allBookingByMonth,
-        activeSearchQuery,
-    ]);
-
-    const renderInvoices = () => {
-        const isLoading =
-            loadingBookingCurrent || loadingBooking || loadingBookingByMonth;
-        if (isLoading && displayBookings.length === 0) {
-            return (
-                <div className={style.loadingItem}>
-                    <DynamicLoadingItem />
-                </div>
-            );
-        }
-        if (activeFilter === "Theo tháng" && !selectedDateMonth) {
-            return (
-                <p className={style.message}>
-                    Vui lòng chọn tháng để xem hóa đơn.
-                </p>
-            );
-        }
-        if (displayBookings.length === 0) {
-            return (
-                <p className={style.message}>Không có đơn hàng nào phù hợp.</p>
-            );
-        }
-        return displayBookings.map((booking) => (
-            <ListInvoice key={booking._id} booking={booking} />
-        ));
-    };
+    const list = useMemo(
+        () =>
+            (bookings || []).filter((b) => {
+                const day = dayKeyVN(new Date(b.date));
+                const upcoming = day >= today && UPCOMING.includes(b.status);
+                return (
+                    (view === 'all' || (view === 'upcoming') === upcoming) &&
+                    (!month || day.startsWith(month)) &&
+                    (!code || String(b.id_booking).includes(code.trim()))
+                );
+            }),
+        [bookings, view, month, code, today],
+    );
 
     return (
-        <div className={style.container}>
-            <div className={style.filter}>
-                <div className={style.flexRow}>
-                    <p>Lọc: </p>
-                    <div className={style.filterButtonsContainer}>
-                        <Button
-                            h30
-                            rounded_6
-                            yellowLinear={activeFilter === "Đơn hiện tại"}
-                            light={activeFilter !== "Đơn hiện tại"}
-                            onClick={() =>
-                                handleFilterButtonClick("Đơn hiện tại")
-                            }
-                            className={style.filterButton}>
-                            Đơn hiện tại
-                        </Button>
-                        <Button
-                            h30
-                            rounded_6
-                            yellowLinear={activeFilter === "Tất cả các đơn"}
-                            light={activeFilter !== "Tất cả các đơn"}
-                            onClick={() =>
-                                handleFilterButtonClick("Tất cả các đơn")
-                            }
-                            className={style.filterButton}>
-                            Tất cả các đơn
-                        </Button>
-                        <Button
-                            h30
-                            rounded_6
-                            yellowLinear={activeFilter === "Theo tháng"}
-                            light={activeFilter !== "Theo tháng"}
-                            onClick={() =>
-                                handleFilterButtonClick("Theo tháng")
-                            }
-                            className={style.filterButton}>
-                            Theo tháng
-                        </Button>
-                    </div>
-                    {activeFilter === "Theo tháng" && (
-                        <div className={style.calendar}>
-                            <Calendar
-                                type="month"
-                                selectedDate={selectedDateMonth}
-                                onChange={(date) => setSelectedDateMonth(date)}
-                            />
-                        </div>
-                    )}
+        <section className={style.wrap}>
+            <div className={style.toolbar}>
+                <div role="group" aria-label="Xem đơn" className={style.views}>
+                    {VIEWS.map(([key, label]) => (
+                        <button
+                            key={key}
+                            type="button"
+                            aria-pressed={view === key}
+                            className={clsx(style.view, view === key && style.active)}
+                            onClick={() => setView(key)}
+                        >
+                            {label}
+                        </button>
+                    ))}
                 </div>
-                <div className={style.flexRow}>
-                    <p>Tìm kiếm: </p>
-                    <Input
-                        placeholder="Nhập mã hóa đơn"
-                        rounded_10
-                        className={style.input}
-                        value={searchInput}
-                        onChange={(e) => setSearchInput(e.target.value)}
-                        onKeyPress={(e) =>
-                            e.key === "Enter" && handlePerformSearch()
-                        }
+                <label className={style.input}>
+                    <span className="sr-only">Lọc theo tháng</span>
+                    <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} />
+                </label>
+                <label className={style.input}>
+                    <span className="sr-only">Tìm theo mã vé</span>
+                    <input
+                        type="search"
+                        inputMode="numeric"
+                        placeholder="Tìm mã vé"
+                        value={code}
+                        onChange={(e) => setCode(e.target.value)}
                     />
-                    <Button
-                        rounded_10
-                        yellowLinear
-                        className={style.search}
-                        onClick={handlePerformSearch}>
-                        Tìm kiếm
-                    </Button>
-                </div>
+                </label>
             </div>
-            <div className={style.listInvoiceContainer}>{renderInvoices()}</div>
-        </div>
+
+            {isError && <p role="alert">Chưa tải được lịch sử đặt phòng, bạn thử tải lại trang nhé.</p>}
+            {isLoading && (
+                <div className={style.list} aria-busy="true">
+                    {[0, 1, 2].map((i) => (
+                        <Skeleton key={i} h={86} radius={14} />
+                    ))}
+                </div>
+            )}
+            {!isLoading && bookings && !list.length && (
+                <div className={style.empty}>
+                    <p>{bookings.length ? 'Không có đơn nào khớp bộ lọc.' : 'Bạn chưa đặt phòng lần nào.'}</p>
+                    <Button href={PATH.BookRoom}>Đặt phòng</Button>
+                </div>
+            )}
+            <div className={style.list}>
+                {list.map((b) => (
+                    <ListInvoice key={b._id} booking={b} />
+                ))}
+            </div>
+        </section>
     );
 };
 
-export default InvoiceDetailPage;
+export default AllBooking;

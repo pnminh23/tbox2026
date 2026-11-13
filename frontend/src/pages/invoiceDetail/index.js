@@ -1,20 +1,14 @@
 import PageHead from '@/components/common/PageHead/PageHead';
-import LayoutAdmin from '@/layout/LayoutAdmin/LayoutAdmin';
+import LayoutAccount from '@/layout/LayoutAccount/LayoutAccount';
 import AllBookingPage from '@/components/page/User/AllBooking';
 
-const title = 'Lịch sử đặt phòng';
-export default function AllBooking() {
+export default function Page() {
     return (
         <>
-            <PageHead title={title} />
+            <PageHead title="Lịch sử đặt phòng" />
             <AllBookingPage />
         </>
     );
 }
-AllBooking.getLayout = function getLayout(page) {
-    return (
-        <LayoutAdmin user dark title={title}>
-            {page}
-        </LayoutAdmin>
-    );
-};
+
+Page.getLayout = (page) => <LayoutAccount title="Lịch sử đặt phòng">{page}</LayoutAccount>;

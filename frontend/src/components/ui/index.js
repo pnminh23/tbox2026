@@ -10,3 +10,5 @@ export { default as TimeGrid } from './TimeGrid/TimeGrid';
 export { default as PageIntro } from './PageIntro/PageIntro';
 export { default as Field } from './Field/Field';
 export { default as OtpInput } from './OtpInput/OtpInput';
+export { default as Dialog } from './Dialog/Dialog';
+export { default as StarRating } from './StarRating/StarRating';
