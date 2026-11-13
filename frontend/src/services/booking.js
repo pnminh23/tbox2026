@@ -27,7 +27,12 @@ export const createBooking = async (bookingData) => {
         refreshBookings();
         return { success: true, message: data.message, data };
     } catch (error) {
-        return { success: false, message: errorMessage(error) };
+        // status 409: khung giờ vừa có người khác giữ
+        return {
+            success: false,
+            status: error.response?.status,
+            message: errorMessage(error),
+        };
     }
 };
 

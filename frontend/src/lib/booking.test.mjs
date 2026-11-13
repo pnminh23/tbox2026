@@ -118,3 +118,13 @@ test('upcomingDays gắn nhãn Hôm nay / Ngày mai / thứ trong tuần', async
     ]);
     assert.equal(upcomingDays('2026-12-31', 2)[1].date, '2027-01-01');
 });
+
+test('validateContact trả lỗi theo từng ô, rỗng khi hợp lệ', async () => {
+    const { validateContact } = await import('./booking.mjs');
+    assert.deepEqual(validateContact({ name: ' An ', phone: '09123', email: 'a@b' }), {
+        name: 'Họ tên cần ít nhất 3 ký tự',
+        phone: 'Số điện thoại cần 10 hoặc 11 chữ số',
+        email: 'Email chưa đúng định dạng',
+    });
+    assert.deepEqual(validateContact({ name: 'Minh Anh', phone: '0912345678', email: 'minh@gmail.com' }), {});
+});

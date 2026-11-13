@@ -1,5 +1,5 @@
 import useSWR, { mutate } from "swr";
-import axiosInstance, { fetcher } from "../config/axios";
+import axiosInstance, { errorMessage, fetcher } from "../config/axios";
 
 const API_URL = `/api/promotion`;
 
@@ -82,5 +82,20 @@ export const deletePromotionById = async (_id) => {
                 message: "Đã xảy ra lỗi khi xóa combo",
             }
         );
+    }
+};
+
+// Kiểm tra mã giảm giá trước khi đặt (công khai)
+export const checkPromotion = async (code) => {
+    try {
+        const { data } = await axiosInstance.get(`${API_URL}/check`, {
+            params: { code },
+        });
+        return { success: true, data: data.data };
+    } catch (error) {
+        return {
+            success: false,
+            message: errorMessage(error, "Không kiểm tra được mã giảm giá"),
+        };
     }
 };

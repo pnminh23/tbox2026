@@ -59,7 +59,7 @@
     justify-content: space-between;
     align-items: baseline;
     gap: 12px;
-    span:first-child {
+    > span:first-child {
         color: var(--ink-muted);
         font-size: 14px;
     }

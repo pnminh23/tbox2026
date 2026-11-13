@@ -1,0 +1,369 @@
+@use 'motion' as *;
+
+.page {
+    @include container;
+    padding-top: 28px;
+    display: flex;
+    gap: 32px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    // Đi tiếp từ lưới: trượt từ phải sang
+    animation: slide-in 0.35s var(--ease-out) backwards;
+}
+
+.main {
+    flex: 999 1 560px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 36px;
+    h1 {
+        @include display(clamp(40px, 6vw, 60px));
+        margin: -20px 0 0;
+    }
+}
+
+.aside {
+    flex: 1 1 320px;
+    min-width: 0;
+    position: sticky;
+    top: 96px;
+}
+
+.back {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--text);
+    font-size: 14px;
+    text-decoration: none;
+    &::before {
+        content: '';
+        width: 8px;
+        height: 8px;
+        margin-right: 10px;
+        border-left: 2px solid currentColor;
+        border-bottom: 2px solid currentColor;
+        transform: rotate(45deg);
+    }
+    &:hover {
+        color: var(--gold);
+    }
+}
+
+.section {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    h2 {
+        margin: 0;
+        font-size: 20px;
+    }
+}
+
+.sectionHead {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.muted {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 14px;
+}
+
+/* ---------- Ô nhập ---------- */
+
+.contact {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    @media (max-width: 768px) {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 14px;
+    min-width: 0;
+    input {
+        min-height: 48px;
+        padding: 0 14px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--seam);
+        background: var(--surface);
+        color: var(--text);
+        font: inherit;
+        font-size: 16px;
+        transition: border-color 0.15s;
+        &:hover {
+            border-color: #5a4f46;
+        }
+    }
+}
+
+.invalid {
+    border: 2px solid var(--danger) !important;
+}
+
+.error {
+    margin: 0;
+    font-size: 13px;
+    color: var(--danger-text);
+    animation: fade-in 0.2s ease-out;
+}
+
+.applied {
+    margin: 0;
+    font-size: 14px;
+    color: var(--gold);
+    animation: fade-up 0.3s var(--ease-out);
+}
+
+.promo {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    .field {
+        flex: 1 1 220px;
+    }
+    input {
+        text-transform: uppercase;
+    }
+}
+
+/* ---------- Phim ---------- */
+
+.films {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding: 4px 2px 8px;
+    scrollbar-width: thin;
+}
+
+.film,
+.filmLater {
+    @include pressable;
+    flex: 0 0 110px;
+    height: 160px;
+    padding: 0;
+    border-radius: 12px;
+    border: 2px solid transparent;
+    overflow: hidden;
+    cursor: pointer;
+    img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+}
+
+.film {
+    background: var(--surface);
+    &:hover {
+        border-color: var(--seam);
+    }
+}
+
+.filmLater {
+    background: var(--surface);
+    border-color: var(--seam);
+    color: var(--text);
+    font: inherit;
+    font-weight: 600;
+}
+
+.film.checked,
+.filmLater.checked {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(243, 184, 23, 0.25);
+}
+
+/* ---------- Combo ---------- */
+
+.combos {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    @media (max-width: 768px) {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.combo {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    min-height: 64px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 2px solid var(--seam);
+    background: var(--surface);
+    cursor: pointer;
+    transition: border-color 0.15s;
+    input {
+        width: 20px;
+        height: 20px;
+        accent-color: var(--gold);
+        flex-shrink: 0;
+    }
+    span {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+    small {
+        color: var(--text-muted);
+        font-size: 13px;
+    }
+    &:hover {
+        border-color: #5a4f46;
+    }
+}
+
+.combo.checked {
+    border-color: var(--gold);
+}
+
+.disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    &:hover {
+        border-color: var(--seam);
+    }
+}
+
+/* ---------- Vé ---------- */
+
+.ticketMain {
+    padding: 22px 22px 18px;
+    h2 {
+        @include display(30px);
+        margin: 0;
+    }
+    dl {
+        margin: 16px 0 0;
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 10px 14px;
+        font-size: 14px;
+    }
+    dt {
+        color: var(--ink-muted);
+    }
+    dd {
+        margin: 0;
+        text-align: right;
+        font-weight: 600;
+        overflow-wrap: anywhere;
+    }
+}
+
+.flash {
+    border-radius: 4px;
+    animation: flash 0.6s ease-out;
+}
+
+.ticketStub {
+    padding: 18px 22px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.total {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    // chỉ nhãn, không đụng span bên trong PriceTag
+    > span:first-child {
+        color: var(--ink-muted);
+        font-size: 14px;
+    }
+}
+
+.price {
+    font-family: var(--font-display), sans-serif;
+    font-weight: 900;
+    font-size: 34px;
+}
+
+.payChoice {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    legend {
+        margin-bottom: 8px;
+        font-size: 14px;
+        font-weight: 600;
+    }
+    label {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        min-height: 48px;
+        padding: 0 14px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--ticket-line);
+        cursor: pointer;
+        transition: border-color 0.15s;
+        span {
+            flex: 1;
+        }
+    }
+    input {
+        width: 20px;
+        height: 20px;
+        accent-color: var(--ink);
+    }
+    .checked {
+        border: 2px solid var(--ink);
+    }
+}
+
+.note {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--ink-muted);
+}
+
+.state {
+    @include container;
+    max-width: 640px;
+    padding-top: 80px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    text-align: center;
+    h1 {
+        @include display(44px);
+        margin: 0;
+    }
+    p {
+        margin: 0;
+        color: var(--text-muted);
+    }
+}
+
+@media (max-width: 900px) {
+    .aside {
+        position: static;
+    }
+}

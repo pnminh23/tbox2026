@@ -117,3 +117,12 @@ export const upcomingDays = (today, n = 7) => {
         return { date: iso, label, short: `${iso.slice(8, 10)}/${iso.slice(5, 7)}` };
     });
 };
+
+/** Kiểm tra thông tin liên hệ của khách vãng lai; trả { ô: lỗi }, rỗng khi hợp lệ. */
+export const validateContact = ({ name = '', phone = '', email = '' }) => {
+    const errors = {};
+    if (name.trim().length < 3) errors.name = 'Họ tên cần ít nhất 3 ký tự';
+    if (!/^[0-9]{10,11}$/.test(phone.trim())) errors.phone = 'Số điện thoại cần 10 hoặc 11 chữ số';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) errors.email = 'Email chưa đúng định dạng';
+    return errors;
+};
