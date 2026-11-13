@@ -1,0 +1,64 @@
+@use 'motion' as *;
+
+.root {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    @media (max-width: 900px) {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.photo {
+    position: relative;
+    overflow: hidden;
+    img {
+        object-fit: cover;
+        filter: brightness(0.5);
+    }
+    p {
+        @include display(56px);
+        position: absolute;
+        left: 48px;
+        right: 48px;
+        bottom: 48px;
+        margin: 0;
+        animation: fade-up 0.6s var(--ease-out) 0.3s backwards;
+    }
+    @media (max-width: 900px) {
+        display: none;
+    }
+}
+
+.panel {
+    padding: 32px 24px 48px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 40px;
+}
+
+.logo {
+    align-self: flex-start;
+    display: flex;
+}
+
+.card {
+    width: 100%;
+    max-width: 420px;
+    margin: auto 0;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    animation: slide-in 0.4s var(--ease-out) backwards;
+    h1 {
+        @include display(clamp(40px, 6vw, 56px));
+        margin: 0;
+    }
+}
+
+.lead {
+    margin: -8px 0 0;
+    color: var(--text-muted);
+    line-height: 1.6;
+}

@@ -1,0 +1,66 @@
+@use 'motion' as *;
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+    font-size: 14px;
+    label {
+        font-weight: 600;
+    }
+}
+
+.control {
+    position: relative;
+    input {
+        width: 100%;
+        min-height: 48px;
+        padding: 0 14px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--seam);
+        background: var(--surface);
+        color: var(--text);
+        font: inherit;
+        font-size: 16px;
+        transition: border-color 0.15s;
+        &:hover {
+            border-color: #5a4f46;
+        }
+    }
+}
+
+.invalid {
+    border: 2px solid var(--danger) !important;
+}
+
+.reveal {
+    position: absolute;
+    right: 2px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 20px;
+    cursor: pointer;
+    &:hover {
+        color: var(--text);
+    }
+}
+
+.hint {
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+.error {
+    color: var(--danger-text);
+    font-size: 13px;
+    animation: fade-in 0.2s ease-out;
+}

@@ -132,3 +132,19 @@ export const holdRemaining = (createdAt, now = new Date()) => {
     const left = Math.max(0, Math.ceil((new Date(createdAt).getTime() + HOLD_MINUTES * 60000 - now.getTime()) / 1000));
     return { minutes: Math.floor(left / 60), seconds: left % 60, expired: left === 0 };
 };
+
+/** Đồng bộ với backend/src/validations/accountValidation.js; trả '' khi hợp lệ. */
+export const validatePassword = (password = '') => {
+    if (password.length < 8) return 'Mật khẩu tối thiểu 8 ký tự';
+    if (!/[a-z]/.test(password) || !/[A-Z]/.test(password)) return 'Mật khẩu cần ít nhất 1 chữ hoa và 1 chữ thường';
+    return '';
+};
+
+/** Kiểm tra form đăng ký; trả { ô: lỗi }. */
+export const validateRegister = ({ password = '', confirm = '', ...contact }) => {
+    const errors = validateContact(contact);
+    const passwordError = validatePassword(password);
+    if (passwordError) errors.password = passwordError;
+    else if (confirm !== password) errors.confirm = 'Mật khẩu nhập lại chưa khớp';
+    return errors;
+};

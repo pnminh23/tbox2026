@@ -8,3 +8,5 @@ export { default as DayPicker } from './DayPicker/DayPicker';
 export { default as TimeChips } from './TimeChips/TimeChips';
 export { default as TimeGrid } from './TimeGrid/TimeGrid';
 export { default as PageIntro } from './PageIntro/PageIntro';
+export { default as Field } from './Field/Field';
+export { default as OtpInput } from './OtpInput/OtpInput';

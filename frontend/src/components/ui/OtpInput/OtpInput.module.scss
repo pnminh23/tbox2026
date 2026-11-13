@@ -1,0 +1,21 @@
+.otp {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 8px;
+    input {
+        min-width: 0;
+        height: 56px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--seam);
+        background: var(--surface);
+        color: var(--text);
+        font: inherit;
+        font-size: 22px;
+        font-weight: 700;
+        text-align: center;
+        transition: border-color 0.15s;
+        &:focus-visible {
+            border-color: var(--gold);
+        }
+    }
+}

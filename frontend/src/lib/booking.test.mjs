@@ -143,3 +143,29 @@ test('holdRemaining đếm ngược 15 phút từ lúc tạo đơn', async () =>
         expired: true,
     });
 });
+
+test('validatePassword khớp quy tắc backend: ≥8 ký tự, có chữ hoa và chữ thường', async () => {
+    const { validatePassword } = await import('./booking.mjs');
+    assert.equal(validatePassword('abc'), 'Mật khẩu tối thiểu 8 ký tự');
+    assert.equal(validatePassword('abcdefgh'), 'Mật khẩu cần ít nhất 1 chữ hoa và 1 chữ thường');
+    assert.equal(validatePassword('ABCDEFGH'), 'Mật khẩu cần ít nhất 1 chữ hoa và 1 chữ thường');
+    assert.equal(validatePassword('Abcdefgh'), '');
+});
+
+test('validateRegister gộp lỗi liên hệ, mật khẩu và nhập lại', async () => {
+    const { validateRegister } = await import('./booking.mjs');
+    assert.deepEqual(
+        validateRegister({
+            name: 'Minh Anh',
+            phone: '0912345678',
+            email: 'minh@gmail.com',
+            password: 'Abcdefgh',
+            confirm: 'Abcdefgx',
+        }),
+        { confirm: 'Mật khẩu nhập lại chưa khớp' },
+    );
+    assert.deepEqual(
+        Object.keys(validateRegister({ name: '', phone: '', email: '', password: '', confirm: '' })).sort(),
+        ['email', 'name', 'password', 'phone'],
+    );
+});
