@@ -1,6 +1,10 @@
+const path = require("path");
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     reactStrictMode: true,
+    // Cho phép `@use "motion"` trong mọi CSS module
+    sassOptions: { includePaths: [path.join(__dirname, "src/styles")] },
     images: {
         remotePatterns: [
             {

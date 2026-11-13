@@ -1,0 +1,16 @@
+@use 'motion' as *;
+
+.reveal > * {
+    opacity: 0;
+}
+
+.in > * {
+    animation: fade-up 0.55s var(--ease-out) both;
+    animation-delay: var(--delay, 0ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .reveal > * {
+        opacity: 1;
+    }
+}

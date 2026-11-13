@@ -1,0 +1,48 @@
+// Token giao diện khách (spec 5.1). Gắn class .theme-box ở layout để không đụng biến cũ của admin.
+.theme-box {
+    --bg: #1c1815;
+    --surface: #29231f;
+    --seam: #3d3530;
+    --cell: #342d28;
+    --gold: #f3b817;
+    --gold-hover: #ffd45c;
+    --ticket: #f6ebd9;
+    --ticket-line: #c9ae95;
+    --ink: #211a15;
+    --ink-muted: #6b5a4e;
+    --text: #f6ebd9;
+    --text-muted: #cdc2b6;
+    --danger: #ff8a7a;
+    --danger-text: #ffb3a7;
+
+    --radius-sm: 10px;
+    --radius-md: 14px;
+    --radius-lg: 18px;
+    --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+    --container: 1200px;
+
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body), system-ui, sans-serif;
+
+    // Ghi đè `* { font-family: Roboto }` toàn cục của giao diện cũ
+    * {
+        font-family: inherit;
+    }
+
+    :focus-visible {
+        outline: 3px solid var(--gold);
+        outline-offset: 3px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+            animation-duration: 0.01ms !important;
+            animation-delay: 0ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+        }
+    }
+}

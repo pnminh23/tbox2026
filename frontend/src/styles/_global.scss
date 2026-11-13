@@ -1,4 +1,5 @@
 @import './color';
+@import './tokens';
 @import './fontsGloball';
 
 // :root {
@@ -124,4 +125,17 @@ input::-webkit-inner-spin-button {
     a {
         font-size: 14px !important;
     }
+}
+
+// Ẩn khỏi màn hình nhưng trình đọc màn hình vẫn đọc
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
 }

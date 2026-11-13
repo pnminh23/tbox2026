@@ -1,0 +1,85 @@
+@use 'motion' as *;
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.btn {
+    @include pressable;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 20px;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid transparent;
+    font-weight: 700;
+    font-size: 15px;
+    text-decoration: none;
+    cursor: pointer;
+    white-space: nowrap;
+
+    &:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+}
+
+.primary {
+    background: var(--gold);
+    color: var(--ink);
+    &:hover:not(:disabled) {
+        background: var(--gold-hover);
+        color: var(--ink);
+    }
+}
+
+.outline {
+    background: transparent;
+    color: var(--text);
+    border-color: var(--gold);
+    &:hover:not(:disabled) {
+        background: var(--gold);
+        color: var(--ink);
+    }
+}
+
+.ghost {
+    background: transparent;
+    color: var(--gold);
+    &:hover:not(:disabled) {
+        color: var(--gold-hover);
+        text-decoration: underline;
+        text-underline-offset: 4px;
+    }
+}
+
+.lg {
+    min-height: 54px;
+    padding: 0 28px;
+    font-size: 16px;
+    font-weight: 800;
+}
+
+.block {
+    display: flex;
+    width: 100%;
+}
+
+.hidden {
+    visibility: hidden;
+}
+
+.spinner {
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2.5px solid currentColor;
+    border-right-color: transparent;
+    animation: spin 0.7s linear infinite;
+}

@@ -1,0 +1,122 @@
+// Keyframe + mixin dùng chung; @use trong từng CSS module (module hash tên keyframe theo file).
+@keyframes fade-up {
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+@keyframes fade-in {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+@keyframes sweep-x {
+    from {
+        transform: scaleX(0);
+    }
+    to {
+        transform: scaleX(1);
+    }
+}
+@keyframes flash {
+    from {
+        background-color: rgba(243, 184, 23, 0.35);
+    }
+    to {
+        background-color: transparent;
+    }
+}
+@keyframes shimmer {
+    from {
+        transform: translateX(-100%);
+    }
+    to {
+        transform: translateX(100%);
+    }
+}
+@keyframes print-out {
+    from {
+        opacity: 0;
+        transform: translateY(-40%) scaleY(0.6);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+@keyframes stamp {
+    0% {
+        opacity: 0;
+        transform: scale(1.8) rotate(-12deg);
+    }
+    60% {
+        opacity: 1;
+        transform: scale(0.94) rotate(-8deg);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) rotate(-8deg);
+    }
+}
+@keyframes slide-in {
+    from {
+        opacity: 0;
+        transform: translateX(var(--slide-from, 24px));
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+@keyframes slide-up {
+    from {
+        transform: translateY(100%);
+    }
+    to {
+        transform: none;
+    }
+}
+@keyframes pulse-soft {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.55;
+    }
+}
+
+@mixin display($size, $weight: 900) {
+    font-family: var(--font-display), sans-serif;
+    font-weight: $weight;
+    font-size: $size;
+    line-height: 0.95;
+    text-transform: uppercase;
+}
+
+@mixin container {
+    max-width: var(--container);
+    margin: 0 auto;
+    padding-inline: 24px;
+    @media (max-width: 600px) {
+        padding-inline: 16px;
+    }
+}
+
+@mixin pressable {
+    transition:
+        background-color 0.15s,
+        color 0.15s,
+        border-color 0.15s,
+        transform 0.15s;
+    &:active {
+        transform: scale(0.97);
+    }
+}

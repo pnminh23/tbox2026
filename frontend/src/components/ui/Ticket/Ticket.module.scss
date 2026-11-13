@@ -1,0 +1,79 @@
+$hole: 11px;
+
+@function hole($pos) {
+    @return radial-gradient(circle at #{$pos}, #0000 $hole, #000 $hole + 0.5px);
+}
+
+@mixin holes($a, $b) {
+    -webkit-mask-image: hole($a), hole($b);
+    mask-image: hole($a), hole($b);
+    -webkit-mask-composite: source-in;
+    mask-composite: intersect;
+}
+
+.ticket {
+    display: flex;
+    filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.25));
+}
+
+.main,
+.stub {
+    min-width: 0;
+}
+
+.cream {
+    background: var(--ticket);
+    color: var(--ink);
+    --line: var(--ticket-line);
+}
+
+.gold {
+    background: var(--gold);
+    color: var(--ink);
+    --line: #8a6a10;
+}
+
+.horizontal {
+    .main {
+        flex: 1 1 auto;
+        border-radius: var(--radius-md) 0 0 var(--radius-md);
+        @include holes('100% 0', '100% 100%');
+    }
+    .stub {
+        flex: 0 0 auto;
+        border-left: 2px dashed var(--line);
+        border-radius: 0 var(--radius-md) var(--radius-md) 0;
+        @include holes('0 0', '0 100%');
+    }
+}
+
+// Vé dọc; vé ngang cũng chuyển sang dọc trên màn hẹp
+@mixin vertical {
+    flex-direction: column;
+    .main {
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        @include holes('0 100%', '100% 100%');
+    }
+    .stub {
+        border-top: 2px dashed var(--line);
+        border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+        @include holes('0 0', '100% 0');
+    }
+}
+
+.vertical {
+    @include vertical;
+}
+
+@media (max-width: 600px) {
+    .horizontal {
+        @include vertical;
+        .main,
+        .stub {
+            flex: none;
+        }
+        .stub {
+            border-left: 0;
+        }
+    }
+}
