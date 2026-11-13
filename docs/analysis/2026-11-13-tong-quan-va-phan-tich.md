@@ -6,12 +6,14 @@ _Ngày: 13/11/2026 — đọc toàn bộ code, chạy UI với mock API để ki
 
 ## B1. Tổng quan dự án
 
-### Cấu trúc (lưu ý: tên thư mục bị đảo)
+### Cấu trúc
 
-| Thư mục | Thực chất là | Công nghệ |
+> Ban đầu tên hai thư mục bị đảo; đã đổi lại ngày 13/11/2026. Mọi đường dẫn bên dưới dùng tên **mới**.
+
+| Thư mục | Vai trò | Công nghệ |
 |---|---|---|
-| `frontend/` | **API server** | Node + Express 4, MongoDB/Mongoose, Socket.IO, PayOS, OpenAI (gpt-4o-mini), Cloudinary, Nodemailer, node-cron |
-| `backend/` | **Giao diện web** | Next.js 13 (Pages Router), React 18, SCSS modules, SWR, axios, Swiper, Recharts, react-quill/tiptap |
+| `backend/` | **API server** | Node + Express 4, MongoDB/Mongoose, Socket.IO, PayOS, OpenAI (gpt-4o-mini), Cloudinary, Nodemailer, node-cron |
+| `frontend/` | **Giao diện web** | Next.js 13 (Pages Router), React 18, SCSS modules, SWR, axios, Swiper, Recharts, react-quill/tiptap |
 
 ### Mô hình dữ liệu
 
@@ -41,13 +43,13 @@ Mức độ: 🔴 nghiêm trọng · 🟠 cao · 🟡 trung bình · ⚪ nhỏ/d
 
 | # | Vấn đề | Vị trí | Hậu quả |
 |---|---|---|---|
-| S1 | `verifyRole` được viết nhưng **không route nào dùng**; mọi route CRUD admin không cần đăng nhập | `frontend/src/routes/*.js` | Ai cũng gọi được tạo/sửa/xoá phim, phòng, cơ sở, combo, khuyến mãi, tin tức |
+| S1 | `verifyRole` được viết nhưng **không route nào dùng**; mọi route CRUD admin không cần đăng nhập | `backend/src/routes/*.js` | Ai cũng gọi được tạo/sửa/xoá phim, phòng, cơ sở, combo, khuyến mãi, tin tức |
 | S2 | `PUT /api/account/edit-account-by-email/:email` không auth, nhận `role` và `password` | `routes/AccountRoutes.js:20`, `controllers/accountContrller.js` | **Ai cũng tự nâng mình thành admin hoặc đổi mật khẩu người khác** |
 | S3 | `GET /all-account-data`, `/account-by-email`, `POST /toggle-lock`, `DELETE /delete/:email` không auth | `routes/AccountRoutes.js` | Lộ danh sách khách hàng, khoá/xoá tài khoản bất kỳ |
 | S4 | `PUT /api/booking/edit/:_id` không auth, không kiểm chủ đơn | `routes/bookingRoutes.js:39` | Huỷ đơn / đánh dấu "ĐÃ THANH TOÁN" cho đơn bất kỳ |
 | S5 | `POST /booking/create` nhận `status`, `isPay` từ client | `bookingController.js:15,116-117` | Gửi `isPay: "ĐÃ THANH TOÁN"` là có đơn "đã thanh toán" |
 | S6 | `get-booking-by-id/:id` công khai, `id_booking` là số tuần tự (DDMM + 2 số) | `bookingController.js:347` | Dò được tên, email, SĐT của mọi khách |
-| S7 | JWT secret **hardcode trong code FE** | `backend/src/middleware.js:6` | Nếu trùng `JWT_SECRET` của server → ai cũng ký được token admin. Cần đổi secret ngay |
+| S7 | JWT secret **hardcode trong code FE** | `frontend/src/middleware.js:6` | Nếu trùng `JWT_SECRET` của server → ai cũng ký được token admin. Cần đổi secret ngay |
 | S8 | `GET /account/data` trả nguyên document: **hash mật khẩu + OTP** | `accountContrller.js:3-20` | Lộ dữ liệu nhạy cảm ra trình duyệt |
 | S9 | Tin tức render bằng `dangerouslySetInnerHTML` + API tạo tin không auth | `NewsDetail.js:55`, `NewsItem.js:21` | Stored XSS |
 | S10 | Không giới hạn số lần thử OTP (6 số, 5 phút), login, chatbot | auth, socket | Brute-force OTP; spam chatbot đốt tiền OpenAI |
@@ -94,7 +96,7 @@ Mức độ: 🔴 nghiêm trọng · 🟠 cao · 🟡 trung bình · ⚪ nhỏ/d
 
 ### ⚪ Dọn dẹp
 
-- Đổi tên thư mục `frontend/` ↔ `backend/` cho đúng vai trò.
+- ~~Đổi tên thư mục `frontend/` ↔ `backend/` cho đúng vai trò.~~ (đã làm)
 - Code chết: `controllers/categoryFlimController.js` (import model không tồn tại), `services/payos.js` (import thứ không tồn tại), `validations/otpVlidation.js`, `pages/api/hello.js`, `useStyleClass`.
 - `console.log` khắp nơi (kể cả log body webhook PayOS); `next.config.js` đưa `JWT_SECRET` vào `env` của Next (nguy cơ lộ ra bundle client).
 - Không có test, không có README chạy dự án, không có `.env.example`.
@@ -114,3 +116,7 @@ Mức độ: 🔴 nghiêm trọng · 🟠 cao · 🟡 trung bình · ⚪ nhỏ/d
 2. B1 (mã đơn trùng theo năm), B2–B3 (trùng lịch), B4–B5 (không vào được trang tài khoản/admin), B6.
 3. B7–B11 và nhóm 🟠.
 4. Giao diện — gộp vào đợt redesign.
+
+---
+
+_Quy ước đường dẫn: file server nằm trong `backend/src/…` (controllers, routes, models, services…), file giao diện nằm trong `frontend/src/…` (components, pages, layout, hooks…)._
