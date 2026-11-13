@@ -3,6 +3,7 @@ import {
     createBooking,
     editBooking,
     getAllBookings,
+    getAvailability,
     getBookedByEmail,
     getBookedByEmailAndMonth,
     getBookedByEmailCurrent,
@@ -20,6 +21,7 @@ const BookingRouter = express.Router();
 
 // Công khai (khách vãng lai đặt được; chi tiết đơn bị ẩn email/SĐT nếu không phải chủ đơn)
 BookingRouter.post('/create', optionalAuth, createBooking);
+BookingRouter.get('/availability', getAvailability);
 BookingRouter.get('/get-book-timeSlots-by-room/:room/:date', getBookedTimeSlotsByRoom);
 BookingRouter.get('/get-booking-by-orderCode/:orderCode', optionalAuth, getBookedByOrderCode);
 BookingRouter.get('/get-booking-by-id/:id_booking', optionalAuth, getBookedById);

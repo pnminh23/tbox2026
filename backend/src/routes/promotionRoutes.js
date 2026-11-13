@@ -1,6 +1,7 @@
 import express from 'express';
 import { requireAdmin } from '../middlewares/authMiddleware.js';
 import {
+    checkPromotion,
     createPromotion,
     deletePromotion,
     editPromotion,
@@ -10,6 +11,7 @@ import {
 
 const PromotionRouter = express.Router();
 
+PromotionRouter.get('/check', checkPromotion);
 PromotionRouter.post('/create', requireAdmin, createPromotion);
 PromotionRouter.get('/get-all', requireAdmin, getAllPromotion);
 PromotionRouter.get('/get/:_id', requireAdmin, getPromotionById);

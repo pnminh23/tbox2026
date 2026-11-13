@@ -17,6 +17,14 @@ export const createPromotion = asyncHandler(async (req, res) => {
     ok(res, await promotionModel.create(data), 'Thêm mã khuyến mãi mới thành công', 201);
 });
 
+// Kiểm tra mã trước khi đặt (công khai, không lộ danh sách mã)
+export const checkPromotion = asyncHandler(async (req, res) => {
+    const code = formatString(req.query.code).toUpperCase();
+    const promo = code && (await promotionModel.findOne({ name: code, quantity: { $gt: 0 } }, 'name discountPercent'));
+    if (!promo) fail(404, 'Mã giảm giá không hợp lệ hoặc đã hết lượt');
+    ok(res, { name: promo.name, discountPercent: promo.discountPercent });
+});
+
 export const getAllPromotion = asyncHandler(async (req, res) =>
     ok(res, await promotionModel.find().sort({ createdAt: -1 })),
 );

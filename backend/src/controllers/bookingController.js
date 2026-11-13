@@ -21,6 +21,7 @@ import {
     toBookingView,
 } from '../services/booking.js';
 import { isAdmin } from '../middlewares/authMiddleware.js';
+import { buildAvailability } from '../services/availability.js';
 import { asyncHandler, fail, ok } from '../utils/http.js';
 import { formatString } from '../utils/format.js';
 import { dayRange, now, slotTime, vnDay } from '../utils/time.js';
@@ -163,6 +164,21 @@ export const getBookedTimeSlotsByRoom = asyncHandler(async (req, res) => {
         'time_slots',
     );
     ok(res, { room, bookedTimeSlots: bookings.flatMap((b) => b.time_slots) });
+});
+
+// Phòng trống của cả cơ sở trong ngày (một lần gọi cho lưới đặt phòng)
+export const getAvailability = asyncHandler(async (req, res) => {
+    const { branch, date } = req.query;
+    if (!branch || !date) fail(400, 'Thiếu cơ sở hoặc ngày');
+
+    const rooms = await roomModel.find({ branch }).populate('type').lean();
+    const bookings = await bookingModel
+        .find(
+            { room: { $in: rooms.map((r) => r._id) }, date: dayRange(date), status: { $in: ACTIVE_STATUSES } },
+            'room time_slots',
+        )
+        .lean();
+    ok(res, { date: vnDay(date).format('YYYY-MM-DD'), rooms: buildAvailability(rooms, bookings) });
 });
 
 const sendBooking = async (res, filter, user) => {
