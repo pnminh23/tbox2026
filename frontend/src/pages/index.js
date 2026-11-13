@@ -13,5 +13,5 @@ export default function Home() {
 
 // Sử dụng getLayout để bọc trang trong LayoutUser
 Home.getLayout = function getLayout(page) {
-    return <LayoutUser>{page}</LayoutUser>;
+    return <LayoutUser overlay>{page}</LayoutUser>;
 };

@@ -1,74 +1,77 @@
 import { useEffect, useRef, useState } from 'react';
-import styles from './AccountBadge.module.scss';
-import avatar from '@public/static/img/avatar/panda.png';
-
-import { AiOutlineAppstore, AiOutlineIdcard, AiOutlineLogout } from 'react-icons/ai';
-import { PATH } from '@/constants/config';
 import Image from 'next/image';
 import Link from 'next/link';
-import clsx from 'clsx';
-import { toast } from 'react-toastify';
-import { logout } from '@/services/auth';
 import { useRouter } from 'next/router';
+import { toast } from 'react-toastify';
+import { AiOutlineAppstore, AiOutlineIdcard, AiOutlineLogout } from 'react-icons/ai';
+import avatar from '@public/static/img/avatar/panda.png';
+import { PATH } from '@/constants/config';
+import { logout } from '@/services/auth';
+import styles from './AccountBadge.module.scss';
 
+/** Avatar + menu tài khoản (dùng cho header khách và admin). */
 const AccountBadge = ({ user }) => {
-    const menuAccountRef = useRef(null);
+    const ref = useRef(null);
     const router = useRouter();
-    const [isMenuAccount, setIsMenuAccount] = useState(false);
+    const [open, setOpen] = useState(false);
 
     useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (menuAccountRef.current && !menuAccountRef.current.contains(event.target)) {
-                setIsMenuAccount(false);
-            }
-        };
-        document.addEventListener('click', handleClickOutside);
+        if (!open) return;
+        const onClick = (e) => !ref.current?.contains(e.target) && setOpen(false);
+        const onKey = (e) => e.key === 'Escape' && setOpen(false);
+        document.addEventListener('click', onClick);
+        document.addEventListener('keydown', onKey);
         return () => {
-            document.removeEventListener('click', handleClickOutside);
+            document.removeEventListener('click', onClick);
+            document.removeEventListener('keydown', onKey);
         };
-    }, []);
+    }, [open]);
 
     const handleLogout = async () => {
         try {
             await logout();
             router.push(PATH.Login);
-        } catch (error) {
-            toast.error('Lỗi khi đăng xuất!', { autoClose: 2000 });
+        } catch {
+            toast.error('Đăng xuất thất bại, vui lòng thử lại');
         }
     };
 
     return (
-        <>
-            <p className={styles.userName}>{user.name}</p>
-            <div className={styles.avatarContainer} ref={menuAccountRef}>
-                <Image
-                    src={user.image || avatar}
-                    alt="avatar"
-                    width={30}
-                    height={30}
-                    className={styles.img}
-                    onClick={() => setIsMenuAccount(!isMenuAccount)}
-                />
-                {isMenuAccount && (
-                    <div className={styles.dropdownMenu}>
-                        {user?.role === 'admin' && (
-                            <div className={styles.menuItem}>
-                                <AiOutlineAppstore />
-                                <Link href={PATH.BookRoomManagement}>Trang quản trị</Link>
-                            </div>
-                        )}
-                        <div className={styles.menuItem}>
-                            <AiOutlineIdcard />
-                            <Link href={PATH.Overview}>Quản lý tài khoản</Link>
-                        </div>
-                        <div className={clsx(styles.menuItem)} onClick={handleLogout}>
-                            <AiOutlineLogout className={styles.red} />
-                            <p className={styles.red}>Đăng xuất</p>
-                        </div>
-                    </div>
-                )}
-            </div>
-        </>
+        <div className={styles.badge} ref={ref}>
+            <button
+                type="button"
+                className={styles.trigger}
+                aria-haspopup="menu"
+                aria-expanded={open}
+                onClick={() => setOpen((v) => !v)}
+            >
+                <Image src={user.image || avatar} alt="" width={32} height={32} className={styles.img} />
+                <span className={styles.userName}>{user.name}</span>
+            </button>
+            {open && (
+                <div className={styles.menu} role="menu">
+                    {user.role === 'admin' && (
+                        <Link href={PATH.BookRoomManagement} className={styles.item} role="menuitem">
+                            <AiOutlineAppstore aria-hidden="true" />
+                            Trang quản trị
+                        </Link>
+                    )}
+                    <Link href={PATH.Overview} className={styles.item} role="menuitem">
+                        <AiOutlineIdcard aria-hidden="true" />
+                        Tài khoản và lịch sử đặt
+                    </Link>
+                    <button
+                        type="button"
+                        className={`${styles.item} ${styles.danger}`}
+                        role="menuitem"
+                        onClick={handleLogout}
+                    >
+                        <AiOutlineLogout aria-hidden="true" />
+                        Đăng xuất
+                    </button>
+                </div>
+            )}
+        </div>
     );
 };
 

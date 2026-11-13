@@ -1,0 +1,29 @@
+@keyframes grow {
+    from {
+        transform: scaleX(0);
+    }
+    to {
+        transform: scaleX(0.85);
+    }
+}
+
+.bar {
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 100;
+    height: 3px;
+    background: #f3b817;
+    transform-origin: left;
+}
+
+.loading {
+    animation: grow 8s cubic-bezier(0.1, 0.8, 0.2, 1) both;
+}
+
+.done {
+    transform: scaleX(1);
+    opacity: 0;
+    transition:
+        transform 0.2s,
+        opacity 0.3s 0.1s;
+}

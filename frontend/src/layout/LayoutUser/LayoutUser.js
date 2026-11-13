@@ -1,22 +1,22 @@
-import Footer from '@/components/common/Footer/Footer';
-import style from './LayoutUser.module.scss';
+import clsx from 'clsx';
 import Header from '@/components/common/Header';
+import Footer from '@/components/common/Footer';
 import Chatbot from '@/components/common/ChatBot';
-const LayoutUser = ({ children }) => {
-    // Nhận children từ props
-    return (
-        <>
-            <div className={style.header}>
-                <Header />
-            </div>
-            <main className={style.main}>{children}</main>
+import style from './LayoutUser.module.scss';
 
-            <Chatbot />
-            <div className={style.footer}>
-                <Footer />
-            </div>
-        </>
-    );
-};
+/** Khung trang khách. overlay: header trong suốt đè lên hero (trang chủ). */
+const LayoutUser = ({ children, overlay = false }) => (
+    <div className={clsx('theme-box', style.root)}>
+        <a href="#main" className={style.skip}>
+            Bỏ qua tới nội dung chính
+        </a>
+        <Header overlay={overlay} />
+        <main id="main" className={clsx(style.main, overlay && style.flush)}>
+            {children}
+        </main>
+        <Chatbot />
+        <Footer />
+    </div>
+);
 
 export default LayoutUser;

@@ -1,145 +1,169 @@
-@import '../../../styles/breakpoints';
+@use 'motion' as *;
 
 .header {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    z-index: 99;
-    // padding: 0 10px;
-    background: var(--dark);
-    :global(.swiper-slide) {
-        height: auto !important; /* Ghi đè height mặc định */
-    }
+    inset: 0 0 auto;
+    z-index: 30;
+    background: rgba(28, 24, 21, 0.92);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--seam);
+    transition:
+        background-color 0.3s,
+        border-color 0.3s;
 }
 
-.container {
-    padding: 10px 0;
-    // position: relative;
-    // padding: 0 10px;
-    height: 60px;
+.transparent {
+    background: transparent;
+    backdrop-filter: none;
+    border-color: transparent;
+}
+
+.bar {
+    @include container;
+    height: 72px;
     display: flex;
-    justify-content: space-between;
-    .headerLeft {
-        display: flex;
-        flex: 1;
-        align-items: center;
-        .logo {
-            // padding: 10px 0;
-            object-fit: cover;
-            width: auto;
-            height: 100%;
-            margin: 0 20px;
-        }
-        .menuicon {
-            margin: 0 10px;
+    align-items: center;
+    gap: 32px;
+}
+
+.logo {
+    display: flex;
+    flex-shrink: 0;
+}
+
+.nav {
+    display: flex;
+    gap: 28px;
+    flex: 1;
+}
+
+.link {
+    position: relative;
+    color: var(--text);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 15px;
+    padding: 10px 0;
+
+    // Gạch chân vàng chạy ra khi rê / trang hiện tại
+    &::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 4px;
+        height: 2px;
+        background: var(--gold);
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform 0.25s var(--ease-out);
+    }
+    &:hover {
+        color: var(--text);
+    }
+    &:hover::after,
+    &.active::after {
+        transform: scaleX(1);
+    }
+}
+
+.active {
+    color: var(--gold);
+}
+
+.actions {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.account {
+    display: flex;
+    align-items: center;
+}
+
+.menuBtn,
+.closeBtn {
+    display: none;
+    width: 44px;
+    height: 44px;
+    place-items: center;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--seam);
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+}
+
+.backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 10000; // trên nút chatbot (9999)
+    background: rgba(0, 0, 0, 0.55);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    &.open {
+        opacity: 1;
+        pointer-events: auto;
+    }
+}
+
+.drawer {
+    position: fixed;
+    inset: 0 0 0 auto;
+    z-index: 10001;
+    width: min(340px, 86vw);
+    background: var(--bg);
+    border-left: 1px solid var(--seam);
+    padding: 16px 20px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    // visibility trễ 0.3s để còn thấy trượt ra; khi ẩn Tab/trình đọc màn hình bỏ qua
+    transform: translateX(100%);
+    visibility: hidden;
+    transition:
+        transform 0.3s var(--ease-out),
+        visibility 0s 0.3s;
+    &.open {
+        transform: none;
+        visibility: visible;
+        transition: transform 0.3s var(--ease-out);
+    }
+    .closeBtn {
+        display: grid;
+        align-self: flex-end;
+    }
+}
+
+.drawerNav {
+    display: flex;
+    flex-direction: column;
+    .link {
+        @include display(36px, 800);
+        padding: 8px 0;
+        &::after {
             display: none;
-            font-size: 25px;
-        }
-        .menu {
-            width: 100%;
-            // opacity: 1;
-            // visibility: visible;
-            display: flex;
-            align-items: center;
-            // margin-left: 20px;
-            // column-gap: 15px;
-            li {
-                margin: 0 1%;
-                // padding: 0 5px;
-                &.active {
-                    color: var(--hightlight);
-                }
-                list-style: none;
-                transition: all 0.2s ease-in-out;
-                &:hover {
-                    color: var(--hightlight);
-                }
-            }
-
-            a {
-                font-size: 12px;
-                font-weight: 600;
-                letter-spacing: 2px;
-                text-transform: uppercase;
-            }
-        }
-    }
-    .headerRight {
-        margin: 0 20px;
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-        column-gap: 20px;
-
-        .login {
-            display: flex;
-            column-gap: 20px;
-            a,
-            p {
-                position: relative;
-                font-size: 14px;
-                font-weight: 400;
-                transition: all 0.2s ease-in-out;
-                &:hover {
-                    color: var(--hightlight);
-                }
-                &::after {
-                    content: '';
-                    position: absolute;
-                    right: -10px;
-                    top: 50%;
-                    transform: translateY(-50%);
-                    width: 1px;
-                    height: 15px;
-                    background-color: #ccc;
-                }
-
-                &:last-child::after {
-                    display: none; // Ẩn đường kẻ ở thẻ cuối cùng
-                }
-            }
-        }
-        .userSection {
-            display: flex;
-            align-items: center;
-            position: relative;
-        }
-    }
-}
-@media screen and (max-width: 980px) {
-    .container {
-        padding: 15px 0;
-        // padding: 10px;
-        .headerLeft {
-            .logo {
-                margin: 0 10px;
-            }
-            .menuicon {
-                display: block; // Hiện icon menu khi màn hình nhỏ
-            }
-
-            .menu {
-                padding: 20px 0;
-                display: none; // Ẩn menu mặc định
-                position: fixed;
-                top: 60px;
-                left: 0;
-                width: 100%;
-                height: 100vh;
-                background: #232323;
-                flex-direction: column;
-                align-items: center;
-                gap: 20px;
-                transition: transform 0.3s ease-in-out;
-            }
-
-            .menu.active {
-                display: flex; // Hiện menu khi có class active
-            }
         }
     }
 }
 
-@media screen and (max-width: 481px) {
+.drawerAccount {
+    margin-top: auto;
+}
+
+@media (max-width: 900px) {
+    .nav,
+    .account,
+    .cta {
+        display: none;
+    }
+    .bar {
+        justify-content: space-between;
+        height: 64px;
+    }
+    .menuBtn {
+        display: grid;
+    }
 }
