@@ -1,226 +1,128 @@
-import style from "./HomePage.module.scss";
-import Header from "@/components/common/Header";
-import Footer from "@/components/common/Footer";
-import Slider from "@/components/common/Slider";
-import FilmItem from "@/components/common/ItemSlider/FilmItem";
-import Banner from "@/components/common/Banner";
-import BoxItem from "@/components/common/ItemSlider/BoxItem";
-import Button from "@/components/common/Button/Button";
-import imgContent1 from "@public/static/img/imgContent1.webp";
-import img2Content1 from "@public/static/img/img2Content1.jpg";
-import { AiOutlineCheck, AiOutlineLeft, AiOutlineRight } from "react-icons/ai";
-import { Swiper, SwiperSlide } from "swiper/react";
-import { Navigation, Autoplay } from "swiper/modules";
-import decorImg1 from "@public/static/img/decor/1.webp";
-import decorImg2 from "@public/static/img/decor/2.webp";
-import decorImg3 from "@public/static/img/decor/3.webp";
-import decorImg4 from "@public/static/img/decor/4.webp";
-import menu1 from "@public/static/img/menuItem/menu1.jpg";
-import menu2 from "@public/static/img/menuItem/menu2.jpg";
-import menu3 from "@public/static/img/menuItem/menu3.jpg";
-import comboDat from "@public/static/img/menuItem/comboDating.jpg";
-// import backgroundContent3 from "@public/static/img/menuItem/background.jpg";
-import clsx from "clsx";
-import { useRef, useEffect, useMemo, useState } from "react";
-import Image from "next/image";
-import Feedback from "@/components/common/Feedback";
-import { useAllFilms, useFilmsByCurrentYear } from "@/services/films";
-import { PATH } from "@/constants/config";
-import { useAllBranches } from "@/services/branch";
-import { useRoomByBranch } from "@/services/room";
-import dynamic from "next/dynamic";
+import Image from 'next/image';
+import Link from 'next/link';
+import clsx from 'clsx';
+import heroImg from '@public/static/img/hero-room.jpg';
+import { Button, Reveal, Ticket } from '@/components/ui';
+import useInView from '@/hooks/useInView';
+import { useAllBranches } from '@/services/branch';
+import { useAllCombo } from '@/services/combo';
+import { formatDuration } from '@/lib/booking.mjs';
+import SearchTicket from './SearchTicket';
+import TonightRooms from './TonightRooms';
+import style from './HomePage.module.scss';
 
-// Import tĩnh bị lỗi:
-// import LoadingItem from '@/components/common/LoadingItem/LoadingItem';
-// import LoadingFullPage from '@/components/common/LoadingFullPage/loadingFullPage';
+const PROMISES = [
+    ['Không camera', 'Cam kết riêng tư tuyệt đối trong phòng'],
+    ['Tài khoản Premium', 'Netflix, YouTube, FPT Play có sẵn'],
+    ['Đồ ăn tận phòng', 'Đảm bảo vệ sinh an toàn thực phẩm'],
+    ['Từ 18 tuổi', 'Dành cho khách trên 18 tuổi'],
+];
 
-// Thay thế bằng:
-const DynamicLoadingItem = dynamic(
-    () => import("@/components/common/LoadingItem/LoadingItem"),
-    { ssr: false },
-);
+const shortPrice = (n) => `${Math.round(n / 1000)}K`;
+const minPrice = (combo) => Math.min(...combo.types.map((t) => t.price));
+
 const Home = () => {
-    // const { films, isLoadingAllFimls, isErrorAllFimls, mutateFilms } = useAllFilms();
-    const { branches, isLoadingAllBranches } = useAllBranches();
+    const { allCombo } = useAllCombo();
+    const { branches } = useAllBranches();
+    // Nút ghim đáy (mobile) chỉ hiện khi ô tìm phòng đã cuộn khỏi màn hình
+    const [heroRef, heroSeen] = useInView({ threshold: 0, rootMargin: '0px', once: false, initial: true });
 
-    const [selectedBranch, setSelectedBranch] = useState("");
-    const { roomsByBranch, isLoading: loadingRoom } =
-        useRoomByBranch(selectedBranch);
-    useEffect(() => {
-        if (branches?.length > 0 && !selectedBranch) {
-            setSelectedBranch(branches[0]._id);
-        }
-    }, [branches, selectedBranch]);
-
-    const {
-        filmsCurrentyear,
-        isLoadingFilmsByCurrentYear,
-        isErrorFilmsByCurrentYear,
-        mutateFilmsByCurrentYear,
-    } = useFilmsByCurrentYear();
-
-    const top10RecentFilms = useMemo(() => {
-        if (!filmsCurrentyear) return [];
-        return [...filmsCurrentyear]
-            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-            .slice(0, 10);
-    }, [filmsCurrentyear]);
-
-    const prevRef = useRef(null);
-    const nextRef = useRef(null);
     return (
-        <div>
-            <Banner />
-            <div className="container">
-                <Slider
-                    // apiUrl="https://phimapi.com/v1/api/danh-sach/phim-le"
-                    data={top10RecentFilms}
-                    isLoading={isLoadingFilmsByCurrentYear}
-                    title="Phim mới ra mắt"
-                    slidesPerView={5}
-                    renderItem={(film) => <FilmItem film={film} />}
-                    breakpoints={{
-                        0: { slidesPerView: 2 },
-                        480: { slidesPerView: 3 },
-                        980: { slidesPerView: 5 },
-                    }}
-                />
+        <>
+            <section className={style.hero}>
+                <Image src={heroImg} alt="" fill priority sizes="100vw" placeholder="blur" className={style.heroImg} />
+                <div className={style.beam} aria-hidden="true" />
+                <div className={style.heroInner}>
+                    <div className={style.heroText}>
+                        <h1>Phòng chiếu của riêng bạn, ngay giữa Hà Nội</h1>
+                        <p>
+                            Chọn giờ, vào phòng, tắt đèn. Netflix, YouTube và FPT Play có sẵn, đồ uống mang tới tận cửa.
+                        </p>
+                    </div>
+                    <div ref={heroRef} className={style.heroTicket}>
+                        <SearchTicket id="search-ticket" />
+                    </div>
+                </div>
+            </section>
 
-                <div className={style.roomByBranch}>
-                    <select
-                        className={style.select}
-                        value={selectedBranch || ""}
-                        onChange={(e) => setSelectedBranch(e.target.value)}>
-                        {branches?.map((branch) => (
-                            <option key={branch._id} value={branch._id}>
-                                {branch.name}
-                            </option>
+            <TonightRooms />
+
+            {allCombo?.length > 0 && (
+                <section className={style.section} aria-labelledby="combo-title">
+                    <h2 id="combo-title" className={style.title}>
+                        Combo cho hai người
+                    </h2>
+                    <p className={style.lead}>Đã gồm thời gian dùng phòng, đồ ăn và 2 đồ uống tự chọn</p>
+                    <Reveal className={style.combos}>
+                        {allCombo.map((combo) => (
+                            <Link
+                                key={combo._id}
+                                href={{ pathname: '/bookRoom', query: { duration: combo.duration } }}
+                                className={style.comboLink}
+                                aria-label={`${combo.name}, từ ${shortPrice(minPrice(combo))}, đặt phòng ${formatDuration(combo.duration)}`}
+                            >
+                                <Ticket
+                                    main={
+                                        <div className={style.comboMain}>
+                                            <strong>{combo.name}</strong>
+                                            <span>{combo.description}</span>
+                                            <span>{formatDuration(combo.duration)} dùng phòng</span>
+                                        </div>
+                                    }
+                                    stub={
+                                        <div className={style.comboStub}>
+                                            <small>từ</small>
+                                            {shortPrice(minPrice(combo))}
+                                        </div>
+                                    }
+                                    stubTone="gold"
+                                />
+                            </Link>
                         ))}
-                    </select>
-                    {loadingRoom ? (
-                        // Hiển thị một placeholder/skeleton loading rõ ràng
-                        <div className={style.loadingPlaceholder}>
-                            <DynamicLoadingItem />
-                        </div>
-                    ) : (
-                        // Chỉ render Slider khi đã có dữ liệu cuối cùng
-                        <Slider
-                            key={selectedBranch}
-                            data={roomsByBranch || []} // Truyền mảng rỗng nếu roomsByBranch là null/undefined
-                            title="Hệ thống phòng"
-                            slidesPerView={3}
-                            renderItem={(box) => <BoxItem box={box} />}
-                            autoplay={true}
-                            slidesPerGroup={3}
-                            breakpoints={{
-                                0: { slidesPerView: 1 },
-                                480: { slidesPerView: 2 },
-                                980: { slidesPerView: 3 },
-                            }}
-                        />
-                    )}
-                </div>
-            </div>
-            <div className={style.content1}>
-                <h3> lí do chọn PNM - BOX</h3>
-                {/* <Image src={bkg1} alt="background" /> */}
-                <div className="container">
-                    <div className={style.intro}>
-                        <div className={style.paragraph}>
-                            <h5>Cafe phim phòng riêng đầu tiên</h5>
-                            <p>
-                                Tự hào là một trong những thương hiệu tiên phong
-                                cho mô hình cafe phim tại Việt Nam, PNM - BOX
-                                mang đến một không gian giải trí riêng tư và độc
-                                đáo. Nơi đây nhanh chóng trở thành điểm hẹn lý
-                                tưởng cho các cặp đôi và nhóm bạn muốn tận hưởng
-                                những giây phút thư giãn.
-                                <br />
-                                <br />
-                                Tại PNM - BOX, mỗi &ldquo;box&rdquo; là một
-                                phòng chiếu phim mini được trang bị màn hình lớn
-                                sắc nét và hệ thống âm thanh sống động. Điểm
-                                nhấn đặc biệt là bạn có thể vừa theo dõi các bộ
-                                phim yêu thích, vừa thoải mái thưởng thức đồ
-                                uống và món ăn nhẹ được phục vụ ngay tại phòng.
-                                <br />
-                                <br />
-                                Với không gian ấm cúng, lãng mạn cùng chất lượng
-                                dịch vụ chu đáo, PNM - BOX đã tạo nên một lựa
-                                chọn giải trí hấp dẫn, kết hợp hoàn hảo trải
-                                nghiệm xem phim chuyên nghiệp và sự thoải mái
-                                của một quán cà phê.
-                            </p>
-                        </div>
-                        <Image src={imgContent1} alt="image Box" />
-                    </div>
-                    <div className={style.utilities}>
-                        <div className={style.image}>
-                            <Image src={img2Content1} alt="ảnh nhân viên" />
-                        </div>
-                        <div className={style.contentUtilities}>
-                            <ul>
-                                <li>
-                                    Thiết bị hiện đại <AiOutlineCheck />
-                                </li>
-                                <li>
-                                    vệ sinh sạch sẽ <AiOutlineCheck />
-                                </li>
-                                <li>
-                                    bảo mật riêng tư cam kết 100% không camera
-                                    <AiOutlineCheck />
-                                </li>
-                                <li>
-                                    Tài khoản Youtube, Netflix, Fpt Play Prenium
-                                    <AiOutlineCheck />
-                                </li>
-                                <li>
-                                    Bảo đảm vệ sinh an toàn thực phẩm
-                                    <AiOutlineCheck />
-                                </li>
-                                <li>
-                                    Dành cho khách hàng trên 18 tuổi
-                                    <AiOutlineCheck />
-                                </li>
-                            </ul>
-                            <Button
-                                uppercase
-                                p_10_24
-                                w_fit
-                                rounded_10
-                                redLinear
-                                bold
-                                href={PATH.BookRoom}>
-                                Đặt phòng
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                    </Reveal>
+                </section>
+            )}
 
-            <div className={style.content3}>
-                <h5>Thực đơn đa dạng</h5>
-                <div className={style.containerContent3}>
-                    <div className="container">
-                        <div className={style.menuitem}>
-                            <Image src={menu1} alt="Menu 1" />
-                            <Image src={menu2} alt="Menu 2" />
-                            <Image src={menu3} alt="Menu 3" />
-                            <Image src={menu3} alt="Menu 3" />
-                            <div className={style.comboImage}>
-                                <Image src={comboDat} alt="Combo dating" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <section className={style.section} aria-label="Cam kết của PNM BOX">
+                <Reveal as="ul" className={style.promises}>
+                    {PROMISES.map(([title, text]) => (
+                        <li key={title}>
+                            <strong>{title}</strong>
+                            <span>{text}</span>
+                        </li>
+                    ))}
+                </Reveal>
+            </section>
+
+            {branches?.length > 0 && (
+                <section className={style.section} aria-labelledby="branch-title">
+                    <h2 id="branch-title" className={style.title}>
+                        {branches.length} cơ sở ở Hà Nội
+                    </h2>
+                    <Reveal as="ul" className={style.branches}>
+                        {branches.map((b) => (
+                            <li key={b._id}>
+                                <Link
+                                    href={{ pathname: '/bookRoom', query: { branch: b._id } }}
+                                    className={style.branch}
+                                >
+                                    <span className={style.branchName}>{b.name}</span>
+                                    <span className={style.branchAddr}>{b.address}</span>
+                                    <span className={style.branchCta}>Xem phòng trống</span>
+                                </Link>
+                            </li>
+                        ))}
+                    </Reveal>
+                </section>
+            )}
+
+            <div className={clsx(style.stickyCta, !heroSeen && style.show)}>
+                <Button href="#search-ticket" size="lg" block>
+                    Tìm phòng trống
+                </Button>
             </div>
-            <div className="container">
-                <div className={style.title}>
-                    <h1>Đánh giá của khách hàng về PNM - BOX</h1>
-                </div>
-                <Feedback />
-            </div>
-        </div>
+        </>
     );
 };
+
 export default Home;

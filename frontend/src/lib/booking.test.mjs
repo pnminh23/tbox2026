@@ -99,3 +99,10 @@ test('parseBookingQuery: ngày sai hoặc đã qua về hôm nay, số sai thàn
         film: 'f1',
     });
 });
+
+test('freeStarts liệt kê các giờ bắt đầu đặt được ít nhất 60 phút, tối đa `limit`', async () => {
+    const { freeStarts } = await import('./booking.mjs');
+    // bận s3: s0..s2 chỉ còn 90', s2 còn 30' → loại; s4 trở đi trống
+    assert.deepEqual(freeStarts(slots, new Set(['s3']), DAY, { now: BEFORE, limit: 3 }), [0, 1, 4]);
+    assert.deepEqual(freeStarts(slots, none, DAY, { now: BEFORE }).length, 9);
+});

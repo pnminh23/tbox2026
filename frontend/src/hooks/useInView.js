@@ -1,17 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
 
-/** true một lần khi phần tử vào khung nhìn (dùng cho hiệu ứng hiện dần). */
-export const useInView = ({ threshold = 0.15, rootMargin = '0px 0px -10% 0px' } = {}) => {
+/**
+ * Theo dõi phần tử có trong khung nhìn không.
+ * once (mặc định): chỉ báo true một lần (hiệu ứng hiện dần); once=false: theo dõi liên tục.
+ */
+export const useInView = ({ threshold = 0.15, rootMargin = '0px 0px -10% 0px', once = true, initial = false } = {}) => {
     const ref = useRef(null);
-    const [inView, setInView] = useState(false);
+    const [inView, setInView] = useState(initial);
 
     useEffect(() => {
         const node = ref.current;
-        if (!node || inView) return;
+        if (!node || (once && inView)) return;
         if (typeof IntersectionObserver === 'undefined') return setInView(true);
 
         const observer = new IntersectionObserver(
             ([entry]) => {
+                if (!once) return setInView(entry.isIntersecting);
                 if (entry.isIntersecting) {
                     setInView(true);
                     observer.disconnect();
@@ -21,7 +25,7 @@ export const useInView = ({ threshold = 0.15, rootMargin = '0px 0px -10% 0px' } 
         );
         observer.observe(node);
         return () => observer.disconnect();
-    }, [inView, threshold, rootMargin]);
+    }, [inView, once, threshold, rootMargin]);
 
     return [ref, inView];
 };

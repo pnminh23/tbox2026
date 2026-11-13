@@ -97,7 +97,7 @@
     font-family: var(--font-display), sans-serif;
     font-weight: $weight;
     font-size: $size;
-    line-height: 0.95;
+    line-height: 1.05; // đủ chỗ cho dấu tiếng Việt chồng tầng
     text-transform: uppercase;
 }
 

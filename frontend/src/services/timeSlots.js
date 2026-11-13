@@ -5,11 +5,8 @@ const API_URL = `/api/timeSlots`;
 
 export const useAllTimeSlots = () => {
     const endpoint = `${API_URL}/get-all`;
-    const { data, error, isLoading } = useSWR(endpoint, fetcher, {
-        shouldRetryOnError: true,
-        revalidateOnFocus: true,
-        refreshInterval: 5000,
-    });
+    // Khung giờ gần như cố định: không cần gọi lại liên tục
+    const { data, error, isLoading } = useSWR(endpoint, fetcher, { revalidateOnFocus: false });
 
     return {
         timeSlots: data?.data,

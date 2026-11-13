@@ -95,3 +95,12 @@ export const parseBookingQuery = (query, today) => {
         film: toText(query.film),
     };
 };
+
+/** Các ô có thể bắt đầu một lượt đặt tối thiểu MIN_MINUTES phút (lấy tối đa `limit` ô). */
+export const freeStarts = (slots, booked, day, { now = new Date(), limit = Infinity } = {}) => {
+    const result = [];
+    for (let i = 0; i < slots.length && result.length < limit; i++) {
+        if (selectRange(slots, booked, day, i, MIN_MINUTES, now)) result.push(i);
+    }
+    return result;
+};
