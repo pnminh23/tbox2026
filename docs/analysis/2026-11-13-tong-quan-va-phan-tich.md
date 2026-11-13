@@ -37,7 +37,7 @@ _Ngày: 13/11/2026 — đọc toàn bộ code, chạy UI với mock API để ki
 
 ## B3. Phân tích chức năng — lỗi, rủi ro, thiếu sót
 
-> **Trạng thái (13/11/2026):** đã sửa toàn bộ mục 🔴 🟠 🟡 ⚪ bên dưới, trừ phần "Thiếu (gợi ý bổ sung)" và thiết kế lại giao diện (để dành cho đợt redesign).
+> **Trạng thái (13/11/2026):** đã sửa toàn bộ mục 🔴 🟠 🟡 ⚪ bên dưới, trừ phần "Thiếu (gợi ý bổ sung)". Giao diện khách đã thiết kế lại (nhánh `claude/redesign-booking-ui`, xem spec `docs/superpowers/specs/2026-11-13-redesign-booking-ui-design.md`).
 > Riêng S7: code đã bỏ secret khỏi FE, nhưng **secret cũ đã nằm trong lịch sử git → phải đổi `JWT_SECRET` trên server**.
 > `useStyleClass` thực ra vẫn được dùng (Button, Input…) nên giữ lại. `register` với email chưa xác thực: giờ ghi đè hồ sơ cũ thay vì xóa.
 
@@ -89,7 +89,7 @@ Mức độ: 🔴 nghiêm trọng · 🟠 cao · 🟡 trung bình · ⚪ nhỏ/d
 - `useUserData` poll mỗi 5 giây trên mọi trang kể cả khi chưa đăng nhập → spam request 401.
 - `register` xoá tài khoản chưa xác thực khi có người đăng ký lại cùng email.
 
-### 🟡 Giao diện (thấy khi chạy thử)
+### 🟡 Giao diện (thấy khi chạy thử) — đã xử lý trong đợt redesign
 
 - Mobile 390px: trang chủ và combo **tràn ngang lên 505px**; ô chọn cơ sở đè lên nút điều hướng slider.
 - Text "Bảo mật riêng tư cam kết 100&Percnt; ko camera" — entity `&percnt;` không được JSX hỗ trợ.
@@ -109,7 +109,7 @@ Mức độ: 🔴 nghiêm trọng · 🟠 cao · 🟡 trung bình · ⚪ nhỏ/d
 ### Thiếu (gợi ý bổ sung)
 
 - Middleware phân quyền admin dùng thống nhất; endpoint "đơn của tôi" thay vì truyền email.
-- Tóm tắt giá realtime ở bước đặt phòng; giữ chỗ tạm (hold) khi đang thanh toán.
+- ~~Tóm tắt giá realtime ở bước đặt phòng~~ (đã có: vé tạm tính ở lưới và checkout); giữ chỗ tạm (hold) khi đang thanh toán (đã có: giữ 15 phút kể từ lúc bấm thanh toán).
 - Tự động chuyển `HOÀN THÀNH` khi hết giờ; nhắc lịch qua email.
 - Trang chi tiết phim; lọc phòng theo sức chứa; bản đồ cơ sở.
 - Chính sách huỷ/hoàn tiền; lịch sử thao tác admin.
@@ -119,7 +119,7 @@ Mức độ: 🔴 nghiêm trọng · 🟠 cao · 🟡 trung bình · ⚪ nhỏ/d
 1. S1–S8 (phân quyền + không tin dữ liệu client) và **đổi JWT secret**.
 2. B1 (mã đơn trùng theo năm), B2–B3 (trùng lịch), B4–B5 (không vào được trang tài khoản/admin), B6.
 3. B7–B11 và nhóm 🟠.
-4. Giao diện — gộp vào đợt redesign.
+4. ~~Giao diện — gộp vào đợt redesign.~~ (đã làm)
 
 ---
 
