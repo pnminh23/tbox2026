@@ -1,162 +1,172 @@
-import { formatMoney } from '@/function/formatMoney';
-import styles from './BookingDetail.module.scss';
-import Button from '@/components/common/Button';
-import { PATH } from '@/constants/config';
-import Input from '@/components/common/Input';
-import { AiOutlineCheckCircle, AiOutlineCloseCircle, AiOutlineRight } from 'react-icons/ai';
-import Link from 'next/link';
-import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
-import Popup from '@/components/common/Popup/Popup';
-import useBookingActions from '@/hooks/useBookingActions';
+import { useRouter } from 'next/router';
+import clsx from 'clsx';
+import { Button, Skeleton, Ticket } from '@/components/ui';
+import { useBookingById } from '@/services/booking';
 import { useUserData } from '@/services/account';
-import { canCustomerCancel, canPay } from '@/constants/booking';
+import useBookingActions from '@/hooks/useBookingActions';
+import { useBookingEvents } from '@/hooks/useBookingRealTime';
+import useCountdown from '@/hooks/useCountdown';
+import { BOOKING_STATUS, PAY_STATUS, canCustomerCancel, canPay } from '@/constants/booking';
+import { formatMoney } from '@/function/formatMoney';
+import { dayKeyVN, depositOf } from '@/lib/booking.mjs';
+import { PATH } from '@/constants/config';
+import styles from './BookingDetail.module.scss';
 
-const BookingDetail = ({ booking }) => {
+// Con dấu trên vé theo trạng thái
+const STAMPS = {
+    [BOOKING_STATUS.SUCCESS]: ['Đã giữ chỗ', 'ok'],
+    [BOOKING_STATUS.DONE]: ['Hoàn thành', 'ok'],
+    [BOOKING_STATUS.CANCELLED]: ['Đã hủy', 'void'],
+    [BOOKING_STATUS.FAILED]: ['Hết hạn', 'void'],
+};
+
+const WARN_SECONDS = 120;
+
+/** Trang vé: thông tin đơn, trạng thái thanh toán, đồng hồ giữ chỗ, các thao tác hợp lệ. */
+const BookingDetail = ({ id }) => {
     const router = useRouter();
-    const { status } = router.query;
-    const [isPopupPaymentVisible, setIsPopupPaymentVisible] = useState(false);
-
-    const [paymentResultStatus, setPaymentResultStatus] = useState(null);
-
-    useEffect(() => {
-        if (status) {
-            setPaymentResultStatus(status);
-
-            setIsPopupPaymentVisible(true);
-
-            // Dọn dẹp URL (xóa query param).
-            const cleanUrl = `/bookRoom/${booking?.id_booking}`;
-            router.replace(cleanUrl, undefined, { shallow: true });
-        }
-    }, [status, booking?.id_booking, router]);
-
-    const { cancel, pay } = useBookingActions(booking);
+    const { booking, isLoading, isError, mutate } = useBookingById(id);
     const { user } = useUserData();
-    const isOwner = !!user && user.email === booking?.email;
+    const { cancel, pay } = useBookingActions(booking, mutate);
+    const pending = booking?.status === BOOKING_STATUS.PENDING;
+    const countdown = useCountdown(booking?.createdAt, pending);
+    const [printing, setPrinting] = useState(false);
+
+    // Vừa đặt xong hoặc vừa thanh toán: "in" vé rồi đóng dấu
+    const { new: isNew, status: payStatus, cancel: payCancelled } = router.query;
+    useEffect(() => {
+        if (isNew || payStatus === 'PAID') setPrinting(true);
+    }, [isNew, payStatus]);
+
+    // Webhook thanh toán / admin đổi trạng thái → tải lại vé
+    useBookingEvents((b) => b?.id_booking === booking?.id_booking && mutate());
+
+    if (isLoading)
+        return (
+            <div className={styles.page} aria-busy="true">
+                <Skeleton h={520} radius={18} />
+            </div>
+        );
+
+    if (isError || !booking)
+        return (
+            <div className={styles.state} role="alert">
+                <h1>Không tìm thấy vé</h1>
+                <p>Mã vé không đúng hoặc đơn đã bị xóa.</p>
+                <Button href={PATH.BookRoom}>Đặt phòng mới</Button>
+            </div>
+        );
+
+    const isOwner = !!user && user.email === booking.email;
+    const stamp = STAMPS[booking.status];
+    const slots = booking.time_slots;
+    const warn = countdown && !countdown.expired && countdown.minutes * 60 + countdown.seconds <= WARN_SECONDS;
+    const rows = [
+        ['Cơ sở', booking.room?.branch?.name],
+        ['Phòng', `${booking.room?.name}, ${booking.room?.type?.name}`],
+        ['Ngày', dayKeyVN(new Date(booking.date)).split('-').reverse().join('/')],
+        ['Giờ', `${slots[0]?.start_time} đến ${slots.at(-1)?.end_time}`],
+        ['Phim', booking.film?.name || 'Chọn tại phòng'],
+        ['Combo', booking.combo?.name || 'Không'],
+        ['Mã giảm giá', booking.promotion || 'Không'],
+        ['Khách', `${booking.name_client}, ${booking.phone}`],
+    ];
 
     return (
-        <div className="container">
-            {isPopupPaymentVisible && (
-                <Popup handleClose={() => setIsPopupPaymentVisible(false)}>
-                    <div className={styles.popupPayment}>
-                        {paymentResultStatus === 'PAID' ? (
-                            <>
-                                <AiOutlineCheckCircle className={styles.success} />
-                                <p>Thanh toán thành công!</p>
-                                <p>Đơn hàng của bạn đã được cập nhật.</p>
-                            </>
-                        ) : (
-                            <>
-                                <AiOutlineCloseCircle className={styles.cancel} />
-                                <p>Thanh toán thất bại</p>
-                                <p>Vui lòng thử lại hoặc liên hệ hỗ trợ.</p>
-                            </>
-                        )}
-                        <Button rounded_10 yellowLinear onClick={() => setIsPopupPaymentVisible(false)}>
-                            Đã hiểu
-                        </Button>
-                    </div>
-                </Popup>
+        <div className={styles.page}>
+            {payCancelled === 'true' && (
+                <p className={styles.notice} role="status">
+                    Bạn đã hủy thanh toán. Đơn vẫn được giữ tới khi hết thời gian, bạn có thể thanh toán lại bên dưới.
+                </p>
             )}
-            <div className={styles.breadcrumb}>
-                <Link href={PATH.BookRoom}>Đặt phòng</Link>
-                <AiOutlineRight />
-                <span>Chi tiết đơn đặt phòng</span>
-            </div>
-            <h5 className={styles.title}>Chi tiết đặt phòng</h5>
-            <div className={styles.BookingDetailContainer}>
-                <div className={styles.groupItem}>
-                    <p className={styles.label}>Mã hóa đơn:</p>
-                    <Input dark rounded_10 disabled value={booking?.id_booking} />
-                </div>
-                <div className={styles.groupItem}>
-                    <p className={styles.label}>Trạng thái đơn hàng:</p>
-                    <Input dark rounded_10 disabled value={booking?.status} />
-                </div>
-                <div className={styles.row}>
-                    <div className={styles.groupItem}>
-                        <p className={styles.label}>Tên khách hàng:</p>
-                        <Input dark disabled rounded_10 value={booking?.name_client} />
-                    </div>
-                    <div className={styles.groupItem}>
-                        <p className={styles.label}>Số điện thoại:</p>
-                        <Input dark rounded_10 disabled value={booking?.phone} />
-                    </div>
-                </div>
-                <div className={styles.groupItem}>
-                    <p className={styles.label}>Email:</p>
-                    <Input dark rounded_10 disabled value={booking?.email} />
-                </div>
 
-                <div className={styles.groupItem}>
-                    <p className={styles.label}>Phim:</p>
-                    <Input dark rounded_10 disabled value={booking?.film.name} />
-                </div>
-
-                <div className={styles.row}>
-                    <div className={styles.groupItem}>
-                        <p className={styles.label}>Cơ sở:</p>
-                        <Input dark rounded_10 disabled value={booking?.room.branch.name} />
-                    </div>
-                    <div className={styles.groupItem}>
-                        <p className={styles.label}>Phòng:</p>
-                        <Input dark rounded_10 disabled value={booking?.room.name} />
-                    </div>
-                    <div className={styles.groupItem}>
-                        <p className={styles.label}>Loại phòng:</p>
-                        <Input dark rounded_10 disabled value={booking?.room.type.name} />
-                    </div>
-                </div>
-                <div className={styles.row}>
-                    <div className={styles.groupItem}>
-                        <p className={styles.label}>Ngày đặt phòng:</p>
-                        <Input dark rounded_10 disabled value={dayjs(booking?.date).format('DD/MM/YYYY')} />
-                    </div>
-                    <div className={styles.groupItem}>
-                        <p className={styles.label}>Giờ bắt đầu:</p>
-                        <Input dark rounded_10 disabled value={booking?.time_slots[0].start_time} />
-                    </div>
-                    <div className={styles.groupItem}>
-                        <p className={styles.label}>Giờ kết thúc:</p>
-                        <Input dark rounded_10 disabled value={booking?.time_slots.at(-1).end_time} />
-                    </div>
-                </div>
-                <div className={styles.row}>
-                    <div className={styles.groupItem}>
-                        <p className={styles.label}>Mã khuyến mãi:</p>
-                        <Input dark rounded_10 disabled value={booking?.promotion || 'Không có'} />
-                    </div>
-                    <div className={styles.groupItem}>
-                        <p className={styles.label}>Combo:</p>
-                        <Input dark rounded_10 disabled value={booking?.combo?.name || 'Không có'} />
-                    </div>
-                </div>
-                <div className={styles.action}>
-                    <div className={styles.row}>
-                        <p className={styles.label}>Tổng tiền:</p>
-                        <p className={styles.label}>{`${formatMoney(booking?.total_money)} - (${booking.isPay})`}</p>
-                    </div>
-
-                    <div className={styles.row}>
-                        {isOwner && canCustomerCancel(booking) && (
-                            <Button rounded_10 red w_fit onClick={cancel}>
-                                Hủy đơn
-                            </Button>
-                        )}
-                        {canPay(booking) ? (
-                            <Button rounded_10 yellowLinear w_fit onClick={() => pay()}>
-                                Thanh toán
-                            </Button>
-                        ) : (
-                            <Button rounded_10 yellowLinear w_fit href={PATH.InvoiceDetail}>
-                                Lịch sử đặt phòng
-                            </Button>
+            <Ticket
+                direction="vertical"
+                className={clsx(styles.ticket, printing && styles.print)}
+                main={
+                    <div className={styles.main}>
+                        <p className={styles.code}>Vé #{booking.id_booking}</p>
+                        <h1>Phòng {booking.room?.name}</h1>
+                        <dl>
+                            {rows.map(([label, value]) => (
+                                <div key={label}>
+                                    <dt>{label}</dt>
+                                    <dd>{value}</dd>
+                                </div>
+                            ))}
+                        </dl>
+                        {stamp && (
+                            <span
+                                className={clsx(styles.stamp, styles[stamp[1]], printing && styles.stampIn)}
+                                aria-label={`Trạng thái: ${stamp[0]}`}
+                            >
+                                {stamp[0]}
+                            </span>
                         )}
                     </div>
-                </div>
+                }
+                stub={
+                    <div className={styles.stub}>
+                        <div className={styles.money}>
+                            <span>Tổng tiền</span>
+                            <strong>{formatMoney(booking.total_money)}</strong>
+                        </div>
+                        <p className={styles.payState}>
+                            {booking.isPay}
+                            {booking.payment_amount > 0 &&
+                                booking.isPay !== PAY_STATUS.NONE &&
+                                `, còn lại ${formatMoney(booking.payment_amount)}`}
+                        </p>
+
+                        {pending && countdown && (
+                            <p className={clsx(styles.timer, warn && styles.warn)} role="timer">
+                                {countdown.expired
+                                    ? 'Đã hết thời gian giữ chỗ'
+                                    : `Phòng được giữ thêm ${countdown.minutes}:${String(countdown.seconds).padStart(2, '0')}`}
+                            </p>
+                        )}
+
+                        <div className={styles.actions}>
+                            {canPay(booking) &&
+                                !countdown?.expired &&
+                                (booking.isPay === PAY_STATUS.NONE && pending ? (
+                                    <>
+                                        <Button onClick={() => pay('deposit')} block>
+                                            Cọc {formatMoney(depositOf(booking.total_money))}
+                                        </Button>
+                                        <Button variant="outline" onLight onClick={() => pay('full')} block>
+                                            Trả đủ {formatMoney(booking.total_money)}
+                                        </Button>
+                                    </>
+                                ) : (
+                                    <Button onClick={() => pay('full')} block>
+                                        Thanh toán {formatMoney(booking.payment_amount)}
+                                    </Button>
+                                ))}
+                            {countdown?.expired && <Button href={PATH.BookRoom}>Đặt lại</Button>}
+                            {isOwner && canCustomerCancel(booking) && (
+                                <Button variant="ghost" onLight onClick={cancel}>
+                                    Hủy đơn
+                                </Button>
+                            )}
+                        </div>
+                    </div>
+                }
+            />
+
+            <div className={styles.links}>
+                {user && (
+                    <Button variant="ghost" href={PATH.InvoiceDetail}>
+                        Lịch sử đặt phòng
+                    </Button>
+                )}
+                <Button variant="outline" href={PATH.BookRoom}>
+                    Đặt thêm phòng
+                </Button>
             </div>
         </div>
     );
 };
+
 export default BookingDetail;

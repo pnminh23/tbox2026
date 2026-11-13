@@ -58,6 +58,24 @@
     }
 }
 
+// Nút viền / chữ đặt trên nền sáng (giấy vé)
+.onLight {
+    &.outline {
+        color: var(--ink);
+        border-color: var(--ink);
+        &:hover:not(:disabled) {
+            background: var(--ink);
+            color: var(--ticket);
+        }
+    }
+    &.ghost {
+        color: var(--ink);
+        &:hover:not(:disabled) {
+            color: var(--ink);
+        }
+    }
+}
+
 .lg {
     min-height: 54px;
     padding: 0 28px;

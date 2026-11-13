@@ -128,3 +128,18 @@ test('validateContact trả lỗi theo từng ô, rỗng khi hợp lệ', async 
     });
     assert.deepEqual(validateContact({ name: 'Minh Anh', phone: '0912345678', email: 'minh@gmail.com' }), {});
 });
+
+test('holdRemaining đếm ngược 15 phút từ lúc tạo đơn', async () => {
+    const { holdRemaining } = await import('./booking.mjs');
+    const created = '2026-11-13T12:00:00Z';
+    assert.deepEqual(holdRemaining(created, new Date('2026-11-13T12:13:30Z')), {
+        minutes: 1,
+        seconds: 30,
+        expired: false,
+    });
+    assert.deepEqual(holdRemaining(created, new Date('2026-11-13T12:15:01Z')), {
+        minutes: 0,
+        seconds: 0,
+        expired: true,
+    });
+});

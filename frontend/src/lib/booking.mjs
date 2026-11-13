@@ -126,3 +126,9 @@ export const validateContact = ({ name = '', phone = '', email = '' }) => {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) errors.email = 'Email chưa đúng định dạng';
     return errors;
 };
+
+/** Thời gian giữ chỗ còn lại của đơn chờ thanh toán (HOLD_MINUTES kể từ lúc tạo). */
+export const holdRemaining = (createdAt, now = new Date()) => {
+    const left = Math.max(0, Math.ceil((new Date(createdAt).getTime() + HOLD_MINUTES * 60000 - now.getTime()) / 1000));
+    return { minutes: Math.floor(left / 60), seconds: left % 60, expired: left === 0 };
+};

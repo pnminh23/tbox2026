@@ -4,10 +4,17 @@ import styles from './Button.module.scss';
 
 /**
  * Nút/link dùng chung. Có href → render Link; loading → khóa bấm + spinner.
- * variant: primary | outline | ghost; size: md | lg
+ * variant: primary | outline | ghost; size: md | lg; onLight: đặt trên nền sáng (vé)
  */
-const Button = ({ variant = 'primary', size = 'md', block, loading, href, className, children, ...rest }) => {
-    const cls = clsx(styles.btn, styles[variant], styles[size], block && styles.block, className);
+const Button = ({ variant = 'primary', size = 'md', block, onLight, loading, href, className, children, ...rest }) => {
+    const cls = clsx(
+        styles.btn,
+        styles[variant],
+        styles[size],
+        block && styles.block,
+        onLight && styles.onLight,
+        className,
+    );
     const content = (
         <>
             {loading && <span className={styles.spinner} aria-hidden="true" />}

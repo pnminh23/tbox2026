@@ -1,118 +1,175 @@
-.BookingDetailContainer {
-    margin: 20px 0;
+@use 'motion' as *;
+
+.page {
+    @include container;
+    max-width: 640px;
+    padding-top: 40px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    padding: 20px 30px;
-    background: #303030;
-    border-radius: 10px;
-    .groupItem {
+    gap: 20px;
+}
+
+.notice {
+    margin: 0;
+    padding: 14px 16px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--seam);
+    background: var(--surface);
+    color: var(--text-muted);
+}
+
+.ticket {
+    position: relative;
+}
+
+// Vé "in" ra khỏi khe máy
+.print {
+    transform-origin: top center;
+    animation: print-out 0.6s var(--ease-out) backwards;
+}
+
+.main {
+    position: relative;
+    padding: 26px 26px 22px;
+    h1 {
+        @include display(clamp(32px, 6vw, 44px));
+        margin: 4px 0 0;
+    }
+    dl {
+        margin: 18px 0 0;
         display: flex;
         flex-direction: column;
-        gap: 8px;
-        .label {
-            font-weight: 500;
-            color: #fff;
-        }
-        p {
-            width: fit-content;
-            font-weight: 500;
-        }
-    }
-    .row {
-        display: flex;
         gap: 10px;
-        .groupItem {
-            flex-grow: 1;
-            flex-basis: 0;
+        > div {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            font-size: 14px;
         }
     }
-    .action {
-        margin-top: 10px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-top: 1px solid var(--grey);
-        padding-top: 10px;
-        .label {
-            font-weight: 500;
-        }
+    dt {
+        color: var(--ink-muted);
+        flex-shrink: 0;
+    }
+    dd {
+        margin: 0;
+        text-align: right;
+        font-weight: 600;
+        overflow-wrap: anywhere;
     }
 }
-.title {
-    text-align: center;
-    font-size: 20px;
+
+.code {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-muted);
+    font-variant-numeric: tabular-nums;
 }
-.breadcrumb {
+
+.stamp {
+    position: absolute;
+    right: 22px;
+    top: 22px;
+    padding: 6px 14px;
+    border: 3px solid currentColor;
+    border-radius: 8px;
+    font-family: var(--font-display), sans-serif;
+    font-weight: 900;
+    font-size: 22px;
+    text-transform: uppercase;
+    transform: rotate(-8deg);
+    opacity: 0.85;
+    pointer-events: none;
+}
+
+.ok {
+    color: #2f7a46;
+}
+
+.void {
+    color: #9b3b2f;
+}
+
+// Đóng dấu sau khi vé in xong
+.stampIn {
+    animation: stamp 0.45s cubic-bezier(0.3, 1.4, 0.5, 1) 0.6s backwards;
+}
+
+.stub {
+    padding: 20px 26px 26px;
     display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 14px;
-    color: #fff;
-    position: relative;
-    padding-left: 15px;
-    padding-top: 20px;
-    line-height: 30px;
-    transition: all 0.3s;
+    flex-direction: column;
+    gap: 12px;
+}
 
-    &::after {
-        content: '';
-        position: absolute;
-        top: 20;
-        border-radius: 3px;
-        left: 0;
-        width: 5px;
-        height: 30px;
-        background-color: var(--hightlight);
-    }
-
-    a {
-        // Style cho thẻ Link
-        color: inherit;
-        text-decoration: none;
-        transition: color 0.2s ease;
-
-        &:hover {
-            color: var(--hightlight); // Đổi màu khi hover
-            text-decoration: underline;
-        }
-    }
-
+.money {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
     span {
-        // Style cho trang hiện tại (không phải link)
-        color: var(--hightlight); // Màu chữ sáng hơn
-        font-weight: 500;
+        color: var(--ink-muted);
+        font-size: 14px;
     }
-
-    svg {
-        font-size: 12px;
+    strong {
+        font-family: var(--font-display), sans-serif;
+        font-weight: 900;
+        font-size: 34px;
     }
 }
-.popupPayment {
-    width: 500px;
+
+.payState {
+    margin: 0;
+    font-size: 14px;
+    color: var(--ink-muted);
+}
+
+.timer {
+    margin: 0;
+    align-self: flex-start;
+    padding: 6px 12px;
+    border-radius: 8px;
+    background: var(--ink);
+    color: var(--gold);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+// Dưới 2 phút: đổi màu cảnh báo và nhịp nhẹ
+.warn {
+    color: var(--danger);
+    animation: pulse-soft 1s ease-in-out infinite;
+}
+
+.actions {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    margin-top: 4px;
+}
+
+.links {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.state {
+    @include container;
+    max-width: 640px;
+    padding-top: 80px;
+    display: flex;
+    flex-direction: column;
     align-items: center;
-    svg {
-        font-size: 32px;
-        margin-bottom: 10px;
-    }
-    .success {
-        color: #5cb85c;
-    }
-    .cancel {
-        color: var(--red);
+    gap: 16px;
+    text-align: center;
+    h1 {
+        @include display(44px);
+        margin: 0;
     }
     p {
-        font-size: 20px;
-        color: #151515;
-        text-align: center;
-        font-weight: 500;
-    }
-    .groupItem {
-        margin-top: 10px;
-        display: flex;
-        gap: 10px;
+        margin: 0;
+        color: var(--text-muted);
     }
 }

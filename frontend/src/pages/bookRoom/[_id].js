@@ -1,39 +1,16 @@
-import PageHead from "@/components/common/PageHead/PageHead";
-import LayoutUser from "@/layout/LayoutUser/LayoutUser";
-import { useRouter } from "next/router";
-import { useBookingById } from "@/services/booking";
-import BookingDetail from "@/components/page/User/BookingDetail/BookingDetail";
-import dynamic from "next/dynamic";
+import { useRouter } from 'next/router';
+import PageHead from '@/components/common/PageHead/PageHead';
+import LayoutUser from '@/layout/LayoutUser/LayoutUser';
+import BookingDetail from '@/components/page/User/BookingDetail/BookingDetail';
 
-const DynamicLoadingFullPage = dynamic(
-    () => import("@/components/common/LoadingFullPage/loadingFullPage"),
-    {
-        ssr: false, // Tùy chọn QUAN TRỌNG nhất
-        loading: () => null, // Optional: có thể trả về null hoặc một div trống trong lúc chờ load
-    },
-);
-export default function Booking() {
-    const router = useRouter();
-    const { _id } = router.query;
-
-    const { booking, isLoading, isError } = useBookingById(_id);
-
-    if (isLoading) {
-        return <DynamicLoadingFullPage />;
-    }
-
-    if (isError || !booking) {
-        return <div>Không tìm thấy đơn đặt phòng hoặc đã có lỗi xảy ra.</div>;
-    }
-
+export default function BookingPage() {
+    const { _id } = useRouter().query;
     return (
         <>
-            <PageHead title={`Đơn #${booking.id_booking}`} />
-            <BookingDetail booking={booking} />
+            <PageHead title={_id ? `Vé #${_id}` : 'Vé của bạn'} />
+            <BookingDetail id={_id} />
         </>
     );
 }
 
-Booking.getLayout = function getLayout(page) {
-    return <LayoutUser>{page}</LayoutUser>;
-};
+BookingPage.getLayout = (page) => <LayoutUser>{page}</LayoutUser>;
