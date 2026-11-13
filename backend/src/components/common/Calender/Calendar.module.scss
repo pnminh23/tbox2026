@@ -1,0 +1,115 @@
+.calendarWrapper {
+    position: relative;
+    width: 100%;
+    height: 40px;
+    :global(.react-datepicker) {
+        background-color: #fff;
+        border: none;
+        color: #333;
+        border-radius: 10px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        padding: 10px;
+        width: auto;
+    }
+
+    :global(.react-datepicker__month-year-header) {
+        font-weight: 600;
+        font-size: 16px;
+        color: #111;
+        padding: 8px 0;
+        text-align: center;
+    }
+
+    :global(.react-datepicker__month-wrapper) {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+        padding: 5px 10px;
+    }
+
+    :global(.react-datepicker__month-text) {
+        padding: 8px 12px;
+        border-radius: 6px;
+        transition: background 0.2s ease;
+        text-align: center;
+        font-size: 14px;
+        cursor: pointer;
+    }
+
+    :global(.react-datepicker__month-text:hover) {
+        background-color: #f0f0f0;
+    }
+
+    :global(.react-datepicker__month-text.react-datepicker__month--selected) {
+        background-color: #2563eb;
+        color: #fff;
+        font-weight: 600;
+    }
+
+    :global(.react-datepicker__navigation--previous),
+    :global(.react-datepicker__navigation--next) {
+        border-color: #2563eb;
+    }
+
+    :global(.react-datepicker__navigation--previous:hover),
+    :global(.react-datepicker__navigation--next:hover) {
+        border-color: #1d4ed8;
+    }
+}
+
+.calendarButton {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    height: 100%;
+    padding: 10px 20px;
+    font-size: 14px;
+    border: 1px solid var(--dark);
+    border-radius: 5px;
+    background-color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: #000;
+    &:hover {
+        background-color: #f3f3f3;
+    }
+}
+
+.calendarIcon {
+    margin-left: 8px;
+    width: 20px;
+    height: 20px;
+    color: #555;
+}
+
+.calendarPopover {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 100;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    padding: 10px;
+    margin-top: 5px;
+}
+
+.customDatepicker {
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.disable {
+    pointer-events: none;
+    border: none;
+    background: var(--disabled-bg);
+    color: var(--text-color-secondary-3);
+}
+
+.rounded_10 {
+    border-radius: 10px;
+}
+
+/* CUSTOMIZE react-datepicker khi chọn tháng */

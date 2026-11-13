@@ -1,0 +1,63 @@
+.managerContainer {
+    padding: 10px;
+    width: 600px;
+}
+
+.title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+.list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 8px;
+    border-bottom: 1px solid #f0f0f0;
+
+    &:last-child {
+        border-bottom: none;
+    }
+
+    .itemName {
+        flex-grow: 1;
+        font-weight: 500;
+    }
+
+    .itemPrice {
+        color: #666;
+        font-size: 14px;
+        min-width: 120px;
+    }
+}
+
+.actions {
+    display: flex;
+    gap: 8px;
+}
+
+.formCreate {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+
+    .inputs {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+}
+.popupActions {
+    display: flex;
+}

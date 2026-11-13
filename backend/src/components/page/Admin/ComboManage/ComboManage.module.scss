@@ -1,0 +1,75 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    height: calc(100vh - 100px);
+}
+
+.header {
+    display: flex;
+    .btnAdd {
+        margin-left: auto;
+    }
+}
+.formPopup {
+    width: 700px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    .title {
+        text-align: center;
+        font-size: 20px;
+        font-weight: 500;
+    }
+    .groupItem {
+        flex: auto;
+        display: flex;
+        flex-direction: column;
+        label {
+            font-weight: 500;
+        }
+        .item {
+            margin-bottom: 10px;
+        }
+    }
+    .row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .date {
+        width: 50%;
+    }
+    .country {
+        width: 50%;
+    }
+    .btnAdd {
+        margin-top: 10px;
+        margin-left: auto;
+    }
+}
+.nameComboContainer {
+    text-align: center;
+    font-weight: 500;
+}
+.typeRoomContainer {
+    display: flex;
+    gap: 10px;
+    flex-direction: column;
+    .typeRoom {
+        width: 100px;
+        background: var(--gradient-yellow);
+        line-height: 40px;
+        padding: 0 10px;
+        border-radius: 10px;
+        text-align: center;
+    }
+    .inputPrice {
+        width: 100%;
+    }
+}
+.textareaDescription {
+    padding: 8px 10px;
+    border-radius: 10px;
+}

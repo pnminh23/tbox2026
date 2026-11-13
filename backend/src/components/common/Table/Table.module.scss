@@ -1,0 +1,122 @@
+.container {
+    width: 100%;
+}
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    thead {
+        background-color: var(--dark);
+        height: 40px;
+        padding: 10px 15px;
+        color: #fff;
+        tr {
+            font-size: 14px;
+            font-weight: 500;
+        }
+        th {
+            text-align: left;
+            padding: 0 10px;
+        }
+    }
+    tbody {
+        td {
+            text-align: left;
+            padding: 0 10px;
+        }
+        tr {
+            border-bottom: 1px solid var(--grey); // màu viền có thể tuỳ chỉnh
+            height: 70px;
+            // &:nth-child(even) {
+            //     background-color: #f2f2f2; // màu nền cho dòng chẵn
+            // }
+        }
+    }
+    th::selection,
+    td::selection {
+        background-color: var(--blue);
+        color: #fff;
+    }
+}
+/* Tùy chỉnh độ rộng từng cột */
+.col-index {
+    width: 50px;
+    text-align: center !important;
+}
+
+.col-name {
+    width: 300px;
+}
+
+.col-email {
+    width: 350px;
+}
+
+.col-role {
+    text-align: center !important;
+
+    width: 150px;
+}
+
+.col-status {
+    text-align: center !important;
+
+    width: 150px;
+}
+
+.col-release_date {
+    text-align: center !important;
+
+    width: 150px;
+}
+.col-createdAt {
+    text-align: center !important;
+
+    width: 150px;
+}
+
+.col-image {
+    text-align: center !important;
+    width: 150px;
+}
+.col-duration {
+    text-align: center !important;
+    width: 100px;
+}
+.col-country {
+    text-align: center !important;
+    width: 150px;
+}
+.colAction {
+    text-align: center !important;
+}
+
+.role {
+    padding: 10px;
+    border-radius: 10px;
+    background: var(--yellow-bg);
+    color: var(--yellow);
+}
+
+.status {
+    padding: 10px;
+    border-radius: 10px;
+    background: var(--green-bg);
+    color: var(--green);
+}
+
+.statusLock {
+    padding: 10px;
+    border-radius: 10px;
+    background: var(--red-bg);
+    color: var(--red-hightlight);
+}
+
+.actions {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+}
+.image {
+    margin: 0 auto;
+    padding: 6px 0;
+}

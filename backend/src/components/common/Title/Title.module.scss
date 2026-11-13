@@ -1,0 +1,36 @@
+.title {
+    margin: 20px 0;
+    h1 {
+        // align-items: center;
+        font-size: 24px;
+        text-transform: uppercase;
+        position: relative;
+        padding-left: 15px;
+        line-height: 50px;
+        transition: all 0.3s;
+
+        &::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            border-radius: 3px;
+            left: 0;
+            width: 5px;
+            height: 50px;
+            background-color: var(--hightlight);
+        }
+    }
+}
+.link {
+    text-decoration: none;
+    color: inherit;
+    transition: color 0.3s ease;
+
+    &:hover {
+        color: var(--hightlight);
+    }
+
+    h1 {
+        margin: 0;
+    }
+}

@@ -1,0 +1,23 @@
+.priceContainer {
+    margin: auto;
+    width: fit-content;
+    display: flex;
+    gap: 10px;
+    padding-bottom: 10px;
+    .priceItem {
+        border-radius: 10px;
+        border: 1px solid var(--hightlight);
+        .typeName {
+            background: var(--gradient-yellow);
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
+            display: flex;
+            justify-content: center;
+            color: #000;
+            font-weight: 500;
+        }
+        .price {
+            padding: 4px 8px;
+        }
+    }
+}

@@ -1,0 +1,270 @@
+.content1 {
+    margin: 30px auto;
+    // padding: 0 auto;
+    background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)),
+        url(../../../../../public/static/img/background/bkg-content1.jpg) center / cover no-repeat;
+    width: 100%;
+    height: auto;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    // justify-content: center;
+    h3 {
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 24px;
+        letter-spacing: 1px;
+        margin: 20px 0;
+    }
+    .intro {
+        padding: 10px;
+        border-radius: 10px;
+        background-color: var(--hightlight);
+        display: flex;
+        // justify-content: center;
+        align-items: center;
+        .paragraph {
+            width: 50%;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            h5 {
+                font-size: 24px;
+                color: var(--red);
+                margin-bottom: 25px;
+            }
+        }
+        img {
+            border-radius: 10px;
+            width: 50%;
+            height: 100%;
+            object-fit: cover;
+        }
+    }
+    .utilities {
+        margin: 30px 0;
+
+        border-radius: 10px;
+        // opacity: 0.6;
+        background: rgba(37, 37, 37, 0.6);
+        display: flex;
+        justify-content: space-between;
+
+        .image {
+            z-index: 3;
+            width: 50%;
+        }
+        img {
+            height: auto;
+            object-fit: cover;
+            border-top-left-radius: 10px;
+            border-bottom-left-radius: 10px;
+        }
+        .contentUtilities {
+            width: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+
+            ul {
+                padding: 20px 0;
+                li {
+                    white-space: nowrap;
+                    min-width: fit-content;
+                    position: relative;
+                    display: flex;
+                    text-wrap: unset;
+                    list-style: none;
+                    margin-bottom: 25px;
+                    font-weight: 700;
+                    font-size: 20px;
+                    text-transform: capitalize;
+                    svg {
+                        position: absolute;
+                        left: -50px;
+                        top: 50%;
+                        transform: translateY(-50%);
+                        color: var(--red);
+                        font-size: 25px;
+                    }
+                }
+            }
+        }
+    }
+}
+.content2 {
+    margin: 20px auto;
+    width: calc(100% - 50px);
+    // margin-top: 80px;
+    // height: 475px;
+    overflow: hidden;
+    position: relative;
+
+    .title {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        h5 {
+            text-transform: uppercase;
+            font-size: 24px;
+        }
+        p {
+            margin-top: 10px;
+            text-align: center;
+        }
+    }
+    .swiperContent2 {
+        padding: 0 30px;
+    }
+    img {
+        width: 100%;
+        height: 300px;
+        object-fit: cover; // Đảm bảo ảnh lấp đầy khung hình mà không bị méo
+    }
+
+    .prevButton,
+    .nextButton {
+        position: absolute;
+        top: 60%;
+        transform: translateY(-50%);
+        color: #ccc;
+        background-color: rgba(0, 0, 0, 0.4);
+        width: 40px;
+        height: 40px;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        border-radius: 50%;
+    }
+
+    .prevButton {
+        left: 0px;
+    }
+
+    .nextButton {
+        right: 0px;
+    }
+
+    .prevButton:hover,
+    .nextButton:hover {
+        color: #fff;
+        background-color: rgba(0, 0, 0, 0.7);
+    }
+}
+
+.content3 {
+    display: flex;
+    // justify-content: center;
+    align-items: center;
+    flex-direction: column;
+
+    h5 {
+        font-size: 24px;
+        text-transform: uppercase;
+    }
+    .containerContent3 {
+        margin-top: 20px;
+        width: 100%;
+        height: auto;
+        background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
+            url(../../../../../public/static/img/menuItem/background.jpg) center / cover no-repeat;
+    }
+    .menuitem {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        img {
+            padding-top: 20px;
+            padding-left: 10px;
+            padding-right: 10px;
+            height: 388px;
+            width: auto;
+        }
+        .comboImage {
+            margin-top: 30px;
+            img {
+                width: 100%;
+                padding: 0px 30px;
+                padding-bottom: 20px;
+                height: auto;
+            }
+        }
+    }
+}
+
+.title {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+}
+.roomByBranch {
+    position: relative;
+    select {
+        position: absolute;
+        top: 10px;
+        left: 245px;
+        width: 250px;
+        padding: 5px 10px;
+        font-size: 12px;
+        border: 1.5px solid #ccc;
+        border-radius: 10px;
+        background-color: #232323;
+        color: #fff;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        appearance: none;
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg width='14' height='8' viewBox='0 0 14 8' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l6 6 6-6' stroke='%23999' stroke-width='2' fill='none' fill-rule='evenodd'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        background-size: 12px;
+    }
+}
+.loadingPlaceholder {
+    width: 100%;
+    height: 300px;
+}
+
+@media screen and (max-width: 980px) {
+    .content1 {
+        margin: 0 auto;
+        width: 100%;
+    }
+    .intro {
+        flex-direction: column;
+        .paragraph {
+            width: 100% !important;
+        }
+        img {
+            width: 100% !important;
+        }
+    }
+
+    .utilities {
+        flex-direction: column-reverse;
+        align-items: center;
+        .image {
+            width: 90% !important;
+            margin-top: 20px;
+            img {
+                border-radius: 10px;
+            }
+        }
+        .contentUtilities {
+            width: 100% !important;
+        }
+    }
+    .comboImage {
+        img {
+            padding: 0px !important;
+            padding-bottom: 10px !important;
+        }
+    }
+}
+@media screen and (max-width: 481px) {
+    .menuitem > img {
+        height: 300px !important;
+    }
+}

@@ -1,0 +1,47 @@
+.item {
+  position: relative;
+  transition: transform 0.2s ease-in-out;
+  padding: 0 2%;
+
+  .image {
+    position: relative;
+    height: 300px;
+
+    img {
+      border: 3px solid var(--hightlight);
+      border-top-left-radius: 10px;
+      border-top-right-radius: 10px;
+    }
+  }
+
+  .content {
+    width: 100%;
+    background-color: var(--hightlight);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+    h5 {
+      text-transform: uppercase;
+      color: #fff;
+      font-size: 26px;
+    }
+  }
+  .icon {
+    width: 10%;
+    height: 10%;
+    object-fit: cover;
+    position: absolute;
+    top: 5px;
+    right: 15px;
+  }
+}
+@media screen and (max-width: 980px) {
+  .image {
+    height: 150px !important;
+  }
+}
+@media screen and (max-width: 481px) {
+}

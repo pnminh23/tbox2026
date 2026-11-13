@@ -1,0 +1,62 @@
+.container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.filter {
+    display: inline-flex;
+    justify-content: space-between;
+    p {
+        white-space: nowrap;
+    }
+
+    .selection {
+        width: 200px;
+    }
+    .input {
+        width: 200px;
+    }
+    .search {
+        width: fit-content;
+    }
+    .calendar {
+        width: 250px;
+    }
+}
+
+.listInvoiceContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+    height: fit-content;
+    min-height: 500px;
+    background-color: var(--dark-secondary);
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.flexColumn {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.flexRow {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+}
+.loadingItem {
+    height: 400px;
+}
+.filterButtonsContainer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    .filterButton {
+        transition: all 0.3s ease-in-out;
+    }
+}

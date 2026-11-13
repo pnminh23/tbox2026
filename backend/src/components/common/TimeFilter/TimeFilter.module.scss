@@ -1,0 +1,137 @@
+/* Biến màu để dễ dàng tùy chỉnh */
+
+.container {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+/* ----- KHU VỰC CÁC NÚT LỌC CÓ SẴN ----- */
+.filterContainer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.filterButton {
+    padding: 10px 18px;
+    border: none;
+    border-radius: 8px;
+    background-color: #c4c4c4;
+    color: #000;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    white-space: nowrap; /* Ngăn chữ bị xuống dòng */
+
+    &:hover {
+        background-color: #e4e6eb;
+    }
+
+    /* Lớp .active được thêm vào khi nút được chọn */
+    &.active {
+        background-color: var(--hightlight);
+        color: #000;
+        box-shadow: 0 4px 12px rgba(106, 90, 249, 0.3);
+    }
+}
+
+.customButton {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Khoảng cách giữa icon và chữ */
+}
+.customFilterWrapper {
+    position: relative; /* Cần thiết để định vị popover bên trong */
+    display: inline-block;
+}
+
+/* ----- POPOVER CHỌN NGÀY ----- */
+.popover {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 350px;
+    background-color: white;
+    border: 1px solid var(--border-color);
+    border-radius: 12px; /* Bo góc lớn hơn */
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    z-index: 10;
+    font-family: inherit;
+    // overflow: hidden; /* Đảm bảo các thành phần con tuân thủ border-radius */
+}
+
+.popoverHeader {
+    padding: 12px 16px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-dark);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.popoverBody {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.datePickerGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    label {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text-secondary);
+    }
+}
+
+.popoverFooter {
+    padding: 12px 16px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    border-top: 1px solid var(--border-color);
+    background-color: var(--popover-footer-bg);
+}
+
+/* ----- CÁC NÚT TRONG POPOVER FOOTER ----- */
+.applyButton,
+.resetButton {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-size: 14px;
+}
+
+.resetButton {
+    background-color: var(--button-hover-bg);
+    color: var(--text-secondary);
+
+    &:hover {
+        background-color: #d8dbdf;
+    }
+}
+
+.applyButton {
+    background-color: var(--hightlight);
+    color: var(--text-dark);
+
+    &:hover {
+        background-color: var(--hightlight-hover);
+    }
+
+    &:disabled {
+        background-color: var(--button-disabled-bg);
+        color: var(--button-disabled-text);
+        cursor: not-allowed;
+    }
+}

@@ -1,0 +1,10 @@
+/* RichTextEditor.css hoặc global CSS */
+.ql-editor::selection {
+    background-color: rgba(0, 123, 255, 0.3);
+    color: black;
+}
+
+.ql-editor *::selection {
+    background-color: rgba(0, 123, 255, 0.3);
+    color: black;
+}

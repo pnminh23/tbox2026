@@ -1,0 +1,93 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 100px);
+    gap: 20px;
+}
+.selectionBranch {
+    width: 500px;
+    display: flex;
+    gap: 10px;
+}
+.content {
+    display: flex;
+    gap: 20px;
+    .listRoomContainer {
+        display: flex;
+        flex-direction: column;
+        background: var(--dark-secondary);
+        min-height: 300px;
+        height: fit-content;
+        border-radius: 20px;
+        padding: 10px 15px;
+        .listRoom {
+            width: 500px;
+            height: 250px;
+            display: flex;
+            flex-direction: row;
+            gap: 12px;
+            padding: 20px;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            .room {
+                padding: 8px 26px;
+                border-radius: 10px;
+                width: fit-content;
+                background: var(--dark-primary);
+                color: var(--grey);
+                cursor: pointer;
+            }
+            .active {
+                background: var(--gradient-yellow);
+                color: var(--dark);
+            }
+            .booked {
+                background: var(--gradient-red-red);
+                color: #fff;
+            }
+        }
+    }
+    .bookingContainer {
+        flex: 1;
+        height: 600px;
+        border: 3px solid var(--dark);
+        border-radius: 20px;
+        padding: 20px;
+        .bookingDetail {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            .groupItem {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                .label {
+                    font-weight: 500;
+                    color: var(--text-color-secondary-3);
+                }
+                p {
+                    width: fit-content;
+                    font-weight: 500;
+                }
+            }
+            .row {
+                display: flex;
+                gap: 10px;
+                .groupItem {
+                    flex-grow: 1;
+                    flex-basis: 0;
+                }
+            }
+            .action {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                border-top: 1px solid var(--grey);
+                padding-top: 10px;
+                .label {
+                    font-weight: 500;
+                }
+            }
+        }
+    }
+}

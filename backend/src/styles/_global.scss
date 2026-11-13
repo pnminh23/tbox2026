@@ -1,0 +1,127 @@
+@import './color';
+@import './fontsGloball';
+
+// :root {
+// 	--toastify-toast-min-height: 56px;
+// 	--toastify-toast-width: 400px;
+// }
+
+html,
+body {
+    padding: 0;
+    // padding: 0;
+    margin: 0;
+    font-family: 'Roboto';
+    color: var(--text-color);
+    background-color: #1e1e1e;
+    ::-moz-selection {
+        color: var(--light);
+        background: var(--primary);
+    }
+
+    ::selection {
+        color: var(--light);
+        background: var(--primary);
+    }
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+* {
+    margin: 0;
+    padding: 0;
+}
+
+html,
+body {
+    height: 100%;
+}
+body {
+    line-height: 1.5;
+}
+
+img,
+picture,
+video,
+canvas,
+svg {
+    display: block;
+    max-width: 100%;
+}
+input,
+button,
+textarea,
+select {
+    font: inherit;
+    outline: none;
+}
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+a,
+h6 {
+    overflow-wrap: break-word;
+    &::selection {
+        background: #fff;
+        color: #000;
+    }
+}
+
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.container {
+    margin: auto;
+    max-width: 1440px;
+    width: 100%;
+}
+
+@media screen and (max-width: 980px) {
+    .container {
+        max-width: 90%; /* Cho nhỏ hơn khi màn hình nhỏ */
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .container {
+        max-width: 100%; /* Để container tự co lại theo màn hình */
+        padding: 0 10px;
+    }
+}
+
+@media screen and (max-width: 481px) {
+    .container {
+        max-width: 100%;
+        padding: 0 10px;
+    }
+
+    p,
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    li,
+    a {
+        font-size: 14px !important;
+    }
+}

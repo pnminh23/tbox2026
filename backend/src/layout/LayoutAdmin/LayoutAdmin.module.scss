@@ -1,0 +1,51 @@
+.container {
+    display: flex;
+    background-color: #fff;
+    color: #000;
+    width: 100%;
+    // height: 100vh;
+}
+.container.user {
+    display: flex;
+    background-color: #1e1e1e;
+    color: #fff;
+    // height: 100vh;
+}
+
+.mainContentArea {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+// Sidebar và Header
+.menutab {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+}
+
+.header {
+    position: fixed;
+    top: 0;
+    left: 250px; // đẩy sang bên phải đúng bằng chiều rộng sidebar
+    right: 0;
+    z-index: 1000;
+}
+
+.collapsed {
+    left: 90px;
+}
+
+// Đẩy content xuống dưới header và tránh đè sidebar
+.main {
+    width: 100%;
+    margin-left: 250px;
+    margin-top: 60px;
+    padding: 20px;
+}
+.main.collapsed {
+    margin-left: 90px;
+}

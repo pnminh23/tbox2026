@@ -1,0 +1,58 @@
+* {
+    font-family: 'Roboto';
+}
+
+@font-face {
+    font-family: 'Roboto';
+    src: url('../../public/static/fonts/Roboto-Bold.woff');
+    font-weight: 700;
+}
+
+@font-face {
+    font-family: 'Roboto';
+    src: url('../../public/static/fonts/Roboto-SemiBold.woff');
+    font-weight: 600;
+}
+
+@font-face {
+    font-family: 'Roboto';
+    src: url('../../public/static/fonts/Roboto-Medium.woff');
+    font-weight: 500;
+}
+
+@font-face {
+    font-family: 'Roboto';
+    src: url('../../public/static/fonts/Roboto-Regular.woff');
+    font-weight: 400;
+}
+@font-face {
+    font-family: 'Pacifico';
+    src: url('../../public/static/fonts/Pacifico-Regular-wolf.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+
+html *::-webkit-scrollbar {
+    border-radius: 0;
+    width: 4px;
+}
+
+html *::-webkit-scrollbar-thumb {
+    border-radius: 4px;
+    background-color: rgba(144, 143, 143, 0.15);
+}
+
+html *::-webkit-scrollbar-track {
+    border-radius: 0;
+    background-color: rgba(255, 183, 0, 0);
+}
+
+body {
+    text-rendering: optimizeLegibility;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-font-smoothing: antialiased;
+    overflow-y: overlay;
+    overscroll-behavior: none;
+    touch-action: manipulation;
+    -webkit-user-drag: none;
+}

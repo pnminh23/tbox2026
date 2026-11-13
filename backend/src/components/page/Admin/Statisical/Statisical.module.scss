@@ -1,0 +1,65 @@
+.wrapper {
+    min-height: calc(100vh - 100px);
+}
+
+.summaryCards {
+    width: 70%;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+    margin-bottom: 32px;
+}
+
+.card {
+    padding: 24px;
+    border-radius: 16px;
+    position: relative;
+    overflow: hidden;
+}
+
+.revenueCard {
+    background: var(--gradient-yellow);
+    color: #000;
+}
+
+.orderCard {
+    background: var(--gradient-grey-black);
+    color: #fff;
+    border: 1px solid #e0e0e0;
+}
+
+.cardTitle {
+    font-size: 16px;
+    font-weight: 500;
+    opacity: 0.9;
+    margin-bottom: 8px;
+}
+
+.cardValue {
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 12px;
+
+    .unit {
+        font-size: 20px;
+        font-weight: 500;
+        margin-left: 4px;
+    }
+}
+
+.percentageChange {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+
+    &.positive {
+        color: #34d399; // Màu xanh lá cho tăng trưởng
+    }
+
+    &.negative {
+        color: #ef4444; // Màu đỏ cho sụt giảm
+    }
+
+    // Riêng cho thẻ doanh thu vì nền tối
+}

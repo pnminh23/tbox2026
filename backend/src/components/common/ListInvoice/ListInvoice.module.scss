@@ -1,0 +1,99 @@
+.listInvoiceItem {
+    width: 100%;
+    padding: 15px 30px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    background: var(--dark-primary);
+    justify-content: space-between;
+    .column {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        width: fit-content;
+    }
+    .colAction {
+        align-items: center;
+        justify-content: center;
+    }
+    .colRoom {
+        width: 70px;
+    }
+    .colInfor {
+        width: 200px;
+    }
+    .colIspay {
+        width: 200px;
+    }
+    .colStatus {
+        width: 200px;
+    }
+    .colAction {
+        width: 150px;
+    }
+
+    .item {
+        display: flex;
+        gap: 5px;
+        color: var(--grey);
+        p {
+            color: #fff;
+        }
+    }
+}
+.formPopup {
+    width: 700px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    .title {
+        text-align: center;
+        font-size: 20px;
+        font-weight: 500;
+    }
+    .groupItem {
+        flex: auto;
+        display: flex;
+        flex-direction: column;
+        label {
+            font-weight: 500;
+        }
+    }
+    .row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .btnAdd {
+        margin-top: 10px;
+        margin-left: auto;
+    }
+}
+
+.stars {
+    display: flex;
+    gap: 5px; // Khoảng cách giữa các ngôi sao
+    font-size: 2.5rem; // Kích thước ngôi sao
+    color: #ccc; // Màu sao mặc định (chưa được chọn/hover)
+    cursor: pointer;
+    .star {
+        transition: color 0.2s ease-in-out, transform 0.1s ease-in-out;
+        &:hover {
+            transform: scale(1.1); // Hiệu ứng phóng to nhẹ khi hover
+        }
+    }
+
+    .star.filled {
+        color: #f5a623; // Màu sao khi được chọn hoặc hover
+    }
+
+    /* Tùy chọn: Thêm focus style cho accessibility */
+}
+.feedbackTextarea {
+    padding: 6px 10px;
+    border-radius: 10px;
+    &::selection {
+        background: var(--dark);
+        color: #fff;
+    }
+}

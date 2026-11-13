@@ -1,0 +1,47 @@
+.global-color {
+    --bg: #1e1e1e;
+    --bg-primary: #f4f6fa;
+
+    --border-color: #e4e4e4;
+    --border-color-btn: #dae1ea;
+
+    --light: #ffff;
+    --dark: #151515;
+    --dark-primary: #232323;
+    --dark-secondary: #343434;
+    --hightlight: #f3b817;
+    --red: #a70304;
+    --red-hightlight: #f46161;
+    --red-bg: rgba(244, 97, 97, 0.15);
+    --red-primary: #dc3545;
+    --blue: #3772ff;
+    --blue-bg: rgba(55, 114, 255, 0.1);
+    --grey: #bababa;
+    --disabled-bg: rgba(181, 181, 181, 0.2);
+    --hover: #ddebfe;
+    --grey-primary: #e1dede;
+    --green: #4ecb71;
+    --green-bg: rgba(78, 203, 113, 0.15);
+    --yellow: #f3b817;
+    --yellow-bg: rgba(243, 184, 23, 0.1);
+
+    --text-color: #fff;
+    --text-placehoder: #343434;
+    --text-color-table: #202939;
+    --text-color-secondary: #23262f;
+    --text-color-secondary-2: #353945;
+    --text-color-secondary-3: #777e90;
+    --text-color-secondary-4: #b1b5c3;
+
+    --gradient-yellow: linear-gradient(90deg, #efeb77 0%, #f3b817 100%);
+    --gradient-yellow-reverse: linear-gradient(90deg, #f3b817 0%, #efeb77 100%);
+    --gradient-red-red: linear-gradient(90deg, #b80000 0%, #ff5e5e 100%);
+    --gradient-red-red-reverse: linear-gradient(90deg, #ff5e5e 0%, #b80000 100%);
+
+    --gradient-grey-black: linear-gradient(180deg, rgb(68, 68, 68) 0%, rgb(26, 26, 26) 66.77%, #151515 100%);
+    --gradient-grey-black-90deg: linear-gradient(90deg, rgb(68, 68, 68) 0%, rgb(26, 26, 26) 66.77%, #151515 100%);
+    --gradient-dark-bg: linear-gradient(251deg, #383838 0%, #1e1e1e 99.7%);
+
+    --gradient-blue-blue-blue: linear-gradient(90deg, #1da7df -8.49%, #0b99d2 45.98%, #13c0f2 106.91%);
+    --gradient-blue-white: linear-gradient(90deg, #0fafe4 -25.26%, #fff 115.9%);
+}

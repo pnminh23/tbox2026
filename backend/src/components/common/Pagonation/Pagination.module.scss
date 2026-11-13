@@ -1,0 +1,28 @@
+.pagination {
+    padding: 20px 0;
+    .pageNumbers {
+        display: flex;
+        gap: 5px;
+        margin-bottom: 6px;
+    }
+    .pageButton {
+        padding: 4px 8px;
+        border-radius: 6px;
+        background: var(--grey-primary);
+        outline: none;
+        border: none;
+    }
+    .active {
+        background: var(--hightlight);
+    }
+    .limitContainer {
+        display: flex;
+        gap: 6px;
+        .limitSelect select {
+            border-radius: 6px;
+            option {
+                height: 20px;
+            }
+        }
+    }
+}

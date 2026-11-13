@@ -1,0 +1,54 @@
+.container {
+    position: relative;
+    min-height: calc(100vh - 100px);
+}
+.header {
+    display: flex;
+    margin-bottom: 20px;
+    justify-content: space-between;
+    .search {
+        width: 50%;
+        display: flex;
+        gap: 10px;
+    }
+}
+
+.formEdit {
+    width: 700px;
+
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    .title {
+        text-align: center;
+        font-size: 20px;
+        font-weight: 500;
+    }
+    .row {
+        display: flex;
+        flex-direction: row;
+        gap: 10px;
+    }
+    .groupItem {
+        flex: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        label {
+            font-weight: 500;
+        }
+    }
+    .buttons {
+        margin-top: 10px;
+        margin-left: auto;
+    }
+    .date {
+        width: 50%;
+    }
+    .role {
+        width: 25%;
+    }
+    .status {
+        width: 25%;
+    }
+}

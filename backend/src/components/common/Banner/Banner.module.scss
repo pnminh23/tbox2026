@@ -1,0 +1,40 @@
+.banner {
+    width: 100%;
+    height: 80%;
+    position: relative;
+    overflow: hidden;
+    :global(.swiper-slide) {
+        height: auto !important; // Tắt height: 100% mặc định của Swiper
+    }
+    img {
+        width: 100%;
+        height: 100%;
+        // object-fit: cover;
+    }
+    .prevButton,
+    .nextButton {
+        position: absolute;
+        top: 0;
+        color: #ccc;
+        background-color: rgba(0, 0, 0, 0.1);
+        width: 3.47%;
+        height: 100%;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 25px;
+    }
+    .prevButton {
+        left: 0;
+    }
+    .nextButton {
+        right: 0;
+    }
+
+    .prevButton:hover,
+    .nextButton:hover {
+        color: #fff;
+        background-color: rgba(0, 0, 0, 0.7);
+    }
+}

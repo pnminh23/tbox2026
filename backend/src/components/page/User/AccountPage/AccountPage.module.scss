@@ -1,0 +1,34 @@
+.container {
+    display: flex;
+    padding: 24px;
+    flex-direction: column;
+
+    gap: 10px;
+    border-radius: 10px;
+    background: #343434;
+    .groupItem {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        flex: 1 0 0;
+        .label {
+            font-weight: 700;
+        }
+        input {
+            width: max-content;
+        }
+    }
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    align-self: stretch;
+}
+
+.changePassword {
+    font-weight: 700;
+    cursor: pointer;
+    color: var(--hightlight);
+}

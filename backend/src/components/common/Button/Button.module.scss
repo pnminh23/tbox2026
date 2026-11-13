@@ -1,0 +1,307 @@
+@import '../../../styles/color';
+
+.container {
+    height: 40px;
+    outline: none;
+    border: none;
+    width: 100%;
+    background: transparent;
+    user-select: none;
+    display: flex;
+    justify-content: center;
+}
+
+.btn {
+    text-decoration: none;
+    user-select: none;
+    white-space: nowrap;
+    color: var(--light);
+    background: var(--primary-btn);
+    outline: none;
+    border: none;
+    padding: 12px 24px;
+    transition: 0.2s;
+    font-size: 14px;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    white-space: nowrap;
+    gap: 6px;
+    font-weight: 500;
+
+    &.notUseEffect {
+        transition: 0s;
+    }
+
+    &.disable {
+        cursor: no-drop !important;
+        opacity: 0.3 !important;
+        pointer-events: none;
+
+        &:active {
+            transform: scale(1) !important;
+        }
+    }
+
+    &:hover {
+        opacity: 0.9;
+        cursor: pointer;
+    }
+
+    &:active {
+        transform: scale(0.9);
+    }
+}
+.uppercase {
+    text-transform: uppercase;
+}
+
+.disabled {
+    color: #666; /* Chữ mờ đi */
+    cursor: not-allowed; /* Con trỏ chuột bị cấm */
+
+    opacity: 0.6; /* Làm mờ nút */
+    pointer-events: none; /* Vô hiệu hóa hoàn toàn */
+}
+
+.btn.flex {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.icon {
+    width: 20px;
+    height: 20px;
+    position: relative;
+    svg {
+        font-size: 20px;
+        height: 100%;
+    }
+}
+
+.text {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+}
+
+.small {
+    padding: 8px 24px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.small_p_6 {
+    padding: 6px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.maxContent {
+    max-width: max-content;
+}
+
+.maxHeight {
+    height: 100%;
+}
+
+.noText {
+    display: none; // Ẩn text khi không có children
+}
+
+.inhenrit {
+    background: inherit;
+    color: inherit;
+    border: none;
+}
+
+.yellowLinear {
+    background: var(--gradient-yellow);
+    color: var(--dark);
+}
+.yellowLinearReverse {
+    background: var(--gradient-yellow-reverse);
+    color: var(--dark);
+}
+
+.black {
+    background: var(--dark-primary);
+    color: var(--grey);
+}
+
+.redLinear {
+    background: var(--gradient-red-red);
+    color: var(--light);
+}
+
+.light {
+    background: var(--light);
+    color: var(--dark);
+}
+
+.blue {
+    background: var(--blue);
+    color: var(--light);
+}
+.grey {
+    background: var(--grey);
+    color: #000;
+}
+
+.blueIcon {
+    background: var(--blue-bg);
+    color: var(--blue);
+}
+
+.red {
+    background: var(--red-primary);
+    color: var(--light);
+}
+
+.redIcon {
+    background: var(--red-bg);
+    color: var(--red-hightlight);
+}
+
+.green {
+    background: var(--green);
+    color: var(--light);
+}
+
+.greenIcon {
+    background: var(--green-bg);
+    color: var(--green);
+}
+
+.outline {
+    border: 1px solid #000;
+}
+
+//**********************
+//* CUSTOM STYLE
+//**********************
+.h30 {
+    height: 30px;
+}
+.bold {
+    font-weight: 700;
+}
+
+.bold_lest {
+    font-weight: 500;
+}
+
+.size_bold {
+    font-size: 16px;
+}
+
+.rounded_32 {
+    border-radius: 32px;
+}
+
+.rounded_20 {
+    border-radius: 20px;
+}
+
+.rounded_12 {
+    border-radius: 12px;
+}
+.rounded_10 {
+    border-radius: 10px;
+}
+
+.rounded_8 {
+    border-radius: 8px;
+}
+
+.rounded_6 {
+    border-radius: 6px;
+}
+
+.rounded_4 {
+    border-radius: 4px;
+}
+
+.rounded_2 {
+    border-radius: 2px;
+}
+
+.px_0 {
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.p_2_9 {
+    padding: 2px 9px;
+}
+
+.p_4_4 {
+    padding: 4px;
+}
+
+.p_4_8 {
+    padding: 4px 8px;
+}
+
+.p_4_12 {
+    padding: 4px 12px;
+}
+.p_8_24 {
+    padding: 8px 24px;
+}
+
+.p_8_16 {
+    padding: 8px 16px;
+}
+
+.p_8_40 {
+    padding: 8px 40px;
+}
+
+.p_10_14 {
+    padding: 10px 14px;
+}
+
+.p_10_24 {
+    padding: 10px 24px;
+}
+
+.p_10_40 {
+    padding: 10px 40px;
+}
+
+.p_12_32 {
+    padding: 12px 32px;
+}
+
+.p_14_24 {
+    padding: 14px 24px;
+}
+
+.p_8_16 {
+    padding: 8px 16px;
+}
+
+.p_12_12 {
+    padding: 12px;
+}
+
+.w_fit {
+    width: fit-content;
+}
+
+.fz13 {
+    font-size: 13px;
+}
+
+// @media (max-width: $low-widthMobile) {
+//     .btn.rps_small {
+//         padding: 8px 16px;
+//         font-size: 12px;
+//         border-radius: 8px;
+//     }
+// }

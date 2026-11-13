@@ -1,0 +1,129 @@
+/* components/RichTextEditor.module.scss */
+.editorContainer {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column; // Ensure toolbar is on top of editor
+    :global(.ProseMirror) {
+        /* This is the main editable div rendered by Tiptap */
+        p {
+            margin-bottom: 1em;
+        }
+        h1,
+        h2,
+        h3 {
+            margin-top: 1.5em;
+            margin-bottom: 0.5em;
+            font-weight: bold;
+        }
+        ul,
+        ol {
+            margin-left: 1.5em;
+            margin-bottom: 1em;
+            padding-left: 1em; /* Ensure padding for list markers */
+        }
+        blockquote {
+            border-left: 3px solid #ddd;
+            margin-left: 0; /* Reset default browser margin */
+            padding-left: 1em;
+            color: #555;
+            font-style: italic;
+        }
+        pre {
+            background: #f4f4f4;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 0.75em 1em;
+            white-space: pre-wrap;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        code {
+            background: #f4f4f4;
+            padding: 0.2em 0.4em;
+            margin: 0 0.1em;
+            border-radius: 3px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9em;
+        }
+        hr {
+            border: none;
+            border-top: 1px solid #ccc;
+            margin: 1em 0;
+        }
+    }
+}
+
+.toolbar {
+    display: flex;
+    align-items: center;
+    padding: 8px;
+    border-bottom: 1px solid #ccc;
+    background-color: #f9f9f9;
+    flex-wrap: wrap; /* Allow items to wrap to the next line */
+}
+
+.toolbarButton {
+    background: none;
+    border: none;
+    padding: 6px;
+    margin-right: 4px;
+    cursor: pointer;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease-in-out;
+
+    &:hover {
+        background-color: #f0f0f0;
+    }
+
+    &.isActive {
+        background-color: #e0e0e0;
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+
+    &:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+    }
+}
+
+.divider {
+    width: 1px;
+    height: 20px;
+    background-color: #ccc;
+    margin: 0 8px;
+}
+
+/*
+  Since Tiptap's EditorContent renders its own DOM structure,
+  we target its classes directly, or use :global if needed for deeper child elements.
+  For basic styling of the content area itself:
+*/
+.editorContent {
+    padding: 10px;
+    min-height: 200px;
+    max-height: 300px;
+    outline: none; /* Remove default outline */
+    flex-grow: 1; // Allow editor to take available space
+    overflow-y: auto; // Add scroll if content overflows
+    &::selection {
+        background-color: var(--dark); // Một màu xanh nhạt dễ chịu
+        color: #fff; // Màu chữ khi được chọn (có thể là đen hoặc trắng tùy độ tương phản)
+    }
+    *::selection {
+        background-color: var(--dark); // Một màu xanh nhạt dễ chịu
+        color: #fff; // Màu chữ khi được chọn (có thể là đen hoặc trắng tùy độ tương phản)
+    }
+}
+
+/*
+  For styling the actual content (paragraphs, headings, etc.) rendered by Tiptap,
+  you have a few options:
+  1. Use :global wrapper if you want to style generic HTML tags inside .editorContent.
+  2. Or better, use Tiptap's `editorProps` to add a specific class to the ProseMirror editor
+     instance and style based on that, as shown in the JSX.
+*/
+
+// Example of using :global for broad styling (use with caution and specificity)
