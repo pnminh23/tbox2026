@@ -104,3 +104,16 @@ export const freeStarts = (slots, booked, day, { now = new Date(), limit = Infin
     }
     return result;
 };
+
+const WEEKDAYS = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+
+/** n ngày liên tiếp từ `today` ('YYYY-MM-DD') kèm nhãn hiển thị. */
+export const upcomingDays = (today, n = 7) => {
+    const [y, m, d] = today.split('-').map(Number);
+    return Array.from({ length: n }, (_, i) => {
+        const date = new Date(Date.UTC(y, m - 1, d + i));
+        const iso = date.toISOString().slice(0, 10);
+        const label = i === 0 ? 'Hôm nay' : i === 1 ? 'Ngày mai' : WEEKDAYS[date.getUTCDay()];
+        return { date: iso, label, short: `${iso.slice(8, 10)}/${iso.slice(5, 7)}` };
+    });
+};

@@ -106,3 +106,15 @@ test('freeStarts liệt kê các giờ bắt đầu đặt được ít nhất 6
     assert.deepEqual(freeStarts(slots, new Set(['s3']), DAY, { now: BEFORE, limit: 3 }), [0, 1, 4]);
     assert.deepEqual(freeStarts(slots, none, DAY, { now: BEFORE }).length, 9);
 });
+
+test('upcomingDays gắn nhãn Hôm nay / Ngày mai / thứ trong tuần', async () => {
+    const { upcomingDays } = await import('./booking.mjs');
+    const days = upcomingDays('2026-11-13', 4); // 13/11/2026 là thứ Sáu
+    assert.deepEqual(days, [
+        { date: '2026-11-13', label: 'Hôm nay', short: '13/11' },
+        { date: '2026-11-14', label: 'Ngày mai', short: '14/11' },
+        { date: '2026-11-15', label: 'Chủ nhật', short: '15/11' },
+        { date: '2026-11-16', label: 'Thứ 2', short: '16/11' },
+    ]);
+    assert.equal(upcomingDays('2026-12-31', 2)[1].date, '2027-01-01');
+});

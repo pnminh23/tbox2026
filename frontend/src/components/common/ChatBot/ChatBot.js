@@ -13,7 +13,7 @@ import dynamic from "next/dynamic";
 // Thay thế bằng:
 const DynamicLoadingItem = dynamic(
     () => import("@/components/common/LoadingItem/LoadingItem"),
-    { ssr: false }
+    { ssr: false },
 );
 
 const Chatbot = () => {
@@ -65,10 +65,12 @@ const Chatbot = () => {
     return (
         <div>
             <button
+                type="button"
                 className={styles.chatbotButton}
                 onClick={handleOpenChatbot}
-                title={isOpen ? "Đóng chatbot" : "Mở chatbot"}>
-                <BsFillChatRightDotsFill />
+                aria-label={isOpen ? "Đóng trợ lý tư vấn" : "Mở trợ lý tư vấn"}
+                aria-expanded={isOpen}>
+                <BsFillChatRightDotsFill aria-hidden="true" />
             </button>
 
             {isOpen && (
@@ -94,7 +96,7 @@ const Chatbot = () => {
                                 className={clsx(
                                     styles.message,
                                     styles.bot,
-                                    styles.loadingMessage
+                                    styles.loadingMessage,
                                 )}>
                                 <DynamicLoadingItem />
                             </div>

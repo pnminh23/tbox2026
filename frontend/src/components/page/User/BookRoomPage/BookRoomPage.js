@@ -1,649 +1,262 @@
-import style from "./BookRoomPage.module.scss";
-import dayjs from "dayjs";
-import Tippy from "@tippyjs/react";
-import "tippy.js/dist/tippy.css";
-import "tippy.js/themes/light-border.css";
-import { PATH } from "@/constants/config";
-import { AiOutlineWarning } from "react-icons/ai";
-import Link from "next/link";
-import Button from "@/components/common/Button";
-import Input from "@/components/common/Input";
-import Selection from "@/components/common/Selection";
-import { useState } from "react";
-import Calendar from "@/components/common/Calender";
-import clsx from "clsx";
-import Image from "next/image";
-import dynamic from "next/dynamic";
+import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/router';
+import clsx from 'clsx';
+import { toast } from 'react-toastify';
+import { Button, DayPicker, Skeleton, TimeGrid } from '@/components/ui';
+import { useAllBranches } from '@/services/branch';
+import { useAvailability } from '@/services/availability';
+import { useAllTimeSlots } from '@/services/timeSlots';
+import { useFilm } from '@/services/films';
+import { useBookingEvents } from '@/hooks/useBookingRealTime';
+import {
+    DEFAULT_MINUTES,
+    dayKeyVN,
+    estimateTotal,
+    extendRange,
+    formatDuration,
+    parseBookingQuery,
+    rangeLabel,
+    rangeMinutes,
+    selectRange,
+    upcomingDays,
+} from '@/lib/booking.mjs';
+import BookingTicket from './BookingTicket';
+import RoomCards from './RoomCards';
+import style from './BookRoomPage.module.scss';
 
-const DynamicLoadingFullPage = dynamic(
-    () => import("@/components/common/LoadingFullPage/loadingFullPage"),
-    {
-        ssr: false, // Tùy chọn QUAN TRỌNG nhất
-        loading: () => null, // Optional: có thể trả về null hoặc một div trống trong lúc chờ load
-    },
-);
-import Feedback from "@/components/common/Feedback";
-import { useBookingsRealtime } from "@/hooks/useBookingRealTime";
-import { useRoomByBranchAndType, useTypeRoom } from "@/services/room";
-import loadingAnimation from "@public/animations/loadingItem.json";
+const EVENING = '14:00'; // mặc định lưới hiện từ buổi chiều
 
-const Lottie = dynamic(() => import("lottie-react"), { ssr: false });
-
-import { useAllBranches } from "@/services/branch";
-import { useAllCombo } from "@/services/combo";
-import { useAllTimeSlots } from "@/services/timeSlots";
-import { useUserData } from "@/services/account";
-import { createBooking } from "@/services/booking";
-import { toast } from "react-toastify";
-import { useRouter } from "next/router";
-import { useAllFilms, useFilm } from "@/services/films";
-import Popup from "@/components/common/Popup/Popup";
-import SearchBar from "@/components/common/SearchBar";
-import { formatMoney } from "@/function/formatMoney";
-import useBookingActions from "@/hooks/useBookingActions";
-import { durationMinutes } from "@/function/duration";
-
-const MIN_MINUTES = 60;
-const PAYMENT_THRESHOLD = 150000; // đồng bộ với backend/src/services/booking.js
-const GRACE_MINUTES = 10; // cho đặt khung giờ vừa bắt đầu tối đa 10 phút
-
-const toOptions = (list = []) =>
-    list.map((item) => ({ name: item.name, id: item._id }));
+const bookedOf = (room) => new Set(room?.bookedSlots);
 
 const BookRoomPage = () => {
     const router = useRouter();
-    const { user } = useUserData();
-    const [guest, setGuest] = useState({ name: "", email: "", phone: "" });
-    const [selectedDate, setSelectedDate] = useState(new Date());
-    const [selectedBranch, setSelectedBranch] = useState("");
-    const [selectedTypeRoom, setSelectedTypeRoom] = useState("");
-    const [selectedRoom, setSelectedRoom] = useState("");
-    const [selectedTimeSlots, setSelectedTimeSlots] = useState([]);
-    const [selectedCombo, setSelectedCombo] = useState("");
-    const [selectedDiscount, setSelectedDiscount] = useState("");
-    const [selectedFilm, setSelectedFilm] = useState(null);
-    const [booking, setBooking] = useState(null);
-    const [loading, setLoading] = useState(false);
-    const [isPopupConfirm, setIsPopupConfirm] = useState(false);
-    const [contentConfirm, setContentConfirm] = useState("");
-    const [messageDeposit, setMessageDeposit] = useState("");
-
-    const day = dayjs(selectedDate).format("YYYY-MM-DD");
-    const bookedRoom = useBookingsRealtime(selectedRoom, day);
-    const { typeRooms } = useTypeRoom();
+    const today = dayKeyVN();
+    const q = parseBookingQuery(router.query, today);
     const { branches } = useAllBranches();
-    const { allCombo } = useAllCombo();
-    const { timeSlots = [] } = useAllTimeSlots();
-    const { films } = useAllFilms();
-    const { RoomsByBranchAndType: rooms } = useRoomByBranchAndType(
-        selectedBranch,
-        selectedTypeRoom,
+    const branch = q.branch || branches?.[0]?._id;
+    const { timeSlots: slots = [] } = useAllTimeSlots();
+    const { rooms, isLoading, error, mutate } = useAvailability(branch, q.date);
+    const { film } = useFilm(q.film);
+    const [fullDay, setFullDay] = useState(false);
+    const duration = q.duration || DEFAULT_MINUTES;
+    const now = new Date();
+
+    // Có đơn mới/đổi trạng thái → tải lại phòng trống
+    useBookingEvents(() => mutate());
+
+    // Ghi lựa chọn lên URL (chia sẻ link, quay lại không mất)
+    const setQuery = (patch) => {
+        const query = Object.fromEntries(
+            Object.entries({ ...router.query, branch, ...patch }).filter(([, v]) => v !== undefined && v !== ''),
+        );
+        router.replace({ pathname: router.pathname, query }, undefined, { shallow: true, scroll: false });
+    };
+    const clearSelection = { room: undefined, start: undefined, end: undefined };
+
+    const room = rooms?.find((r) => r._id === q.room);
+
+    // Dải đang chọn suy ra từ URL; null nếu không còn hợp lệ
+    const range = useMemo(() => {
+        if (!room || q.start === undefined || !slots.length) return null;
+        const booked = bookedOf(room);
+        const r =
+            q.end !== undefined
+                ? extendRange(slots, booked, q.date, { start: q.start, end: q.start }, q.end)
+                : selectRange(slots, booked, q.date, q.start, duration);
+        return r && { roomId: room._id, ...r };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [room, q.start, q.end, q.date, duration, slots]);
+
+    // Đến từ ô tìm phòng (có giờ, chưa có phòng): tự chọn phòng đầu tiên trống đủ thời lượng
+    useEffect(() => {
+        if (q.room || q.start === undefined || !rooms || !slots.length) return;
+        const fit = rooms.find((r) => {
+            const sel = selectRange(slots, bookedOf(r), q.date, q.start, duration);
+            return sel && rangeMinutes(slots, sel) >= duration;
+        });
+        if (fit) setQuery({ room: fit._id });
+        else {
+            toast.info(
+                `Lúc ${slots[q.start]?.start_time} không còn phòng trống đủ ${formatDuration(duration)}, bạn chọn giờ khác nhé`,
+            );
+            setQuery(clearSelection);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [rooms, slots, q.room, q.start]);
+
+    // Giờ đang chọn vừa có người đặt (socket) hoặc link cũ không còn hợp lệ
+    useEffect(() => {
+        if (q.room && q.start !== undefined && rooms && slots.length && !range) {
+            toast.warn('Khung giờ bạn chọn vừa có người đặt, hãy chọn giờ khác');
+            setQuery(clearSelection);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [range, rooms]);
+
+    const pick = (roomId, index) => {
+        const target = rooms.find((r) => r._id === roomId);
+        const booked = bookedOf(target);
+        if (range?.roomId === roomId && index > range.start) {
+            const longer = extendRange(slots, booked, q.date, range, index);
+            if (longer) return setQuery({ room: roomId, start: longer.start, end: longer.end });
+        }
+        const next = selectRange(slots, booked, q.date, index, duration);
+        if (!next) return toast.error('Từ khung giờ này không đủ 60 phút trống liên tiếp');
+        setQuery({ room: roomId, start: next.start, end: next.end });
+    };
+
+    const pickStart = (roomId, index) => {
+        const next = selectRange(slots, bookedOf(rooms.find((r) => r._id === roomId)), q.date, index, duration);
+        if (!next) return toast.error('Từ khung giờ này không đủ 60 phút trống liên tiếp');
+        setQuery({ room: roomId, start: index, end: next.end });
+    };
+
+    const changeDuration = (minutes) => setQuery({ duration: minutes, end: undefined });
+
+    const eveningFrom = Math.max(
+        0,
+        slots.findIndex((s) => s.start_time >= EVENING),
     );
-    const { pay } = useBookingActions(booking);
+    const from = fullDay ? 0 : Math.min(eveningFrom, range?.start ?? eveningFrom);
 
-    const filmId = selectedFilm || router.query.f_Id;
-    const { film, isLoading: loadingFilm } = useFilm(filmId);
-    const filmMinutes = durationMinutes(film?.duration);
-    const room = rooms?.find((r) => r._id === selectedRoom);
-
-    const FilmOptions = films?.map((f) => ({
-        name: `${f.name} - ${f.nameEnglish}`,
-        id: f._id,
-        image: f.image,
-    }));
-    const TypeRoomOptions = toOptions(typeRooms);
-    const BranchOptions = toOptions(branches);
-    // Chỉ hiện combo áp dụng cho loại phòng đã chọn, kèm lựa chọn bỏ combo
-    const ComboOptions = [
-        { name: "Không dùng combo", id: "" },
-        ...toOptions(
-            allCombo?.filter((c) =>
-                c.types.some((t) => t.typeRoom?._id === selectedTypeRoom),
-            ),
-        ),
+    const minutes = range ? rangeMinutes(slots, range) : 0;
+    const total = range ? estimateTotal({ pricePerMinute: room.type.pricePerMinute, minutes }) : 0;
+    const dayInfo = upcomingDays(today, 7).find((d) => d.date === q.date);
+    const branchName = branches?.find((b) => b._id === branch)?.name || '';
+    const checkoutHref = range && {
+        pathname: '/bookRoom/checkout',
+        query: { branch, date: q.date, room: range.roomId, start: range.start, end: range.end, film: q.film },
+    };
+    const ticketRows = [
+        ['Cơ sở', branchName],
+        ['Phòng', room && range ? `${room.name}, ${room.type.name}` : 'Chưa chọn', !range],
+        ['Ngày', dayInfo ? `${dayInfo.label} ${dayInfo.short}` : q.date.split('-').reverse().join('/')],
+        ['Giờ', range ? rangeLabel(slots, range) : 'Chưa chọn', !range],
+        ['Phim', film?.name || 'Chọn ở bước sau, không bắt buộc', !film],
     ];
 
-    const customer = {
-        name_client: user?.name || guest.name,
-        email: user?.email || guest.email,
-        phone: user?.phone || guest.phone,
-    };
-
-    /* ---------- Khung giờ ---------- */
-
-    const bookedIds = new Set((bookedRoom?.bookedTimeSlots || []).map(String));
-    const isPast = (slot) => {
-        const [h, m] = slot.start_time.split(":").map(Number);
-        return dayjs(selectedDate)
-            .hour(h)
-            .minute(m)
-            .isBefore(dayjs().subtract(GRACE_MINUTES, "minute"));
-    };
-    const isUnavailable = (slot) => bookedIds.has(slot._id) || isPast(slot);
-
-    const selectedSlots = timeSlots.filter((slot) =>
-        selectedTimeSlots.includes(slot._id),
-    );
-    const totalMinutes = selectedSlots.reduce(
-        (sum, slot) => sum + (slot.slot_duration || 0),
-        0,
-    );
-
-    // Đổi ngày/cơ sở/loại phòng/phòng thì bỏ khung giờ đã chọn
-    const resetSlots = () => setSelectedTimeSlots([]);
-    const handleDateChange = (date) => (setSelectedDate(date), resetSlots());
-    const handleBranchChange = (id) => (
-        setSelectedBranch(id),
-        setSelectedRoom(""),
-        resetSlots()
-    );
-    const handleTypeRoomChange = (id) => (
-        setSelectedTypeRoom(id),
-        setSelectedRoom(""),
-        setSelectedCombo(""),
-        resetSlots()
-    );
-    const handleSelectedRoom = (id) => (setSelectedRoom(id), resetSlots());
-
-    // Chọn dải khung giờ liên tiếp [from, to]; trả null nếu có khung không dùng được
-    const rangeIds = (from, to) => {
-        const range = timeSlots.slice(
-            Math.min(from, to),
-            Math.max(from, to) + 1,
+    const content = () => {
+        if (error)
+            return (
+                <div className={style.state} role="alert">
+                    <p>Chưa tải được phòng trống.</p>
+                    <Button variant="outline" onClick={() => mutate()}>
+                        Thử lại
+                    </Button>
+                </div>
+            );
+        if (isLoading || !rooms || !slots.length)
+            return (
+                <div className={style.loading} aria-busy="true" aria-label="Đang tải phòng trống">
+                    {[0, 1, 2, 3].map((i) => (
+                        <Skeleton key={i} h={56} radius={10} />
+                    ))}
+                </div>
+            );
+        if (!rooms.length)
+            return (
+                <div className={style.state}>
+                    <p>Cơ sở này chưa mở phòng, bạn thử cơ sở khác nhé.</p>
+                </div>
+            );
+        return (
+            <>
+                <div className={style.gridBox}>
+                    <TimeGrid
+                        rooms={rooms}
+                        slots={slots}
+                        day={q.date}
+                        range={range}
+                        from={from}
+                        now={now}
+                        onPick={pick}
+                    />
+                </div>
+                <div className={style.cardsBox}>
+                    <RoomCards
+                        rooms={rooms}
+                        slots={slots}
+                        day={q.date}
+                        range={range}
+                        duration={duration}
+                        now={now}
+                        onPickStart={pickStart}
+                        onDuration={changeDuration}
+                    />
+                </div>
+            </>
         );
-        return range.some(isUnavailable) ? null : range.map((slot) => slot._id);
-    };
-
-    const handleTimeSlotClick = (slotId) => {
-        const clicked = timeSlots.findIndex((slot) => slot._id === slotId);
-        if (clicked === -1) return;
-
-        // Đã có khung đầu: chọn từ khung đầu tới khung vừa bấm
-        if (selectedTimeSlots.length) {
-            const first = timeSlots.findIndex(
-                (slot) => slot._id === selectedTimeSlots[0],
-            );
-            const ids = rangeIds(first, clicked);
-            return ids
-                ? setSelectedTimeSlots(ids)
-                : toast.error(
-                      "Khoảng giờ này có khung đã được đặt hoặc đã qua.",
-                  );
-        }
-
-        // Lần đầu: tự chọn đủ thời lượng phim (tối thiểu 60 phút)
-        const need = Math.max(filmMinutes, MIN_MINUTES);
-        let end = clicked;
-        let minutes = timeSlots[clicked].slot_duration;
-        while (minutes < need && end + 1 < timeSlots.length)
-            minutes += timeSlots[++end].slot_duration;
-
-        const ids = minutes >= need && rangeIds(clicked, end);
-        if (!ids)
-            return toast.error(
-                `Không đủ ${need} phút trống liên tiếp từ khung giờ này.`,
-            );
-        setSelectedTimeSlots(ids);
-    };
-
-    /* ---------- Giá tạm tính (chưa gồm mã giảm giá; server tính lại khi đặt) ---------- */
-
-    const combo = allCombo?.find((c) => c._id === selectedCombo);
-    const estimate = !room
-        ? 0
-        : combo
-          ? combo.types.find((t) => t.typeRoom?._id === room.type?._id)
-                ?.price || 0
-          : (room.type?.base_price_per_minute || 0) * totalMinutes;
-
-    /* ---------- Đặt phòng ---------- */
-
-    const validate = () => {
-        if (!filmId) return "Vui lòng chọn phim";
-        if (!selectedBranch) return "Vui lòng chọn cơ sở";
-        if (!selectedTypeRoom) return "Vui lòng chọn loại phòng";
-        if (!selectedRoom) return "Vui lòng chọn phòng";
-        if (!customer.name_client) return "Vui lòng cung cấp họ và tên";
-        if (!customer.email) return "Vui lòng cung cấp email";
-        if (!customer.phone) return "Vui lòng cung cấp số điện thoại";
-        if (!selectedTimeSlots.length) return "Vui lòng chọn khung giờ";
-        if (totalMinutes < MIN_MINUTES)
-            return `Đặt phòng tối thiểu ${MIN_MINUTES} phút`;
-        return "";
-    };
-    const errorMessage = validate();
-
-    const handleBooking = () => {
-        if (errorMessage) return toast.error(errorMessage);
-        if (filmMinutes && Math.abs(totalMinutes - filmMinutes) > 30) {
-            setContentConfirm(
-                `Phim bạn chọn dài ${filmMinutes} phút nhưng bạn đang đặt ${totalMinutes} phút. Bạn có chắc muốn tiếp tục?`,
-            );
-            return setIsPopupConfirm(true);
-        }
-        handleBookingFinal();
-    };
-
-    const handleBookingFinal = async () => {
-        setIsPopupConfirm(false);
-        setLoading(true);
-        const result = await createBooking({
-            ...customer,
-            film: film?._id,
-            room: selectedRoom,
-            date: day,
-            combo: selectedCombo,
-            time_slots: selectedTimeSlots,
-            promotion: selectedDiscount.trim(),
-        });
-        setLoading(false);
-
-        if (!result.success) return toast.error(result.message);
-        const newBooking = result.data.data;
-        setBooking(newBooking);
-        resetSlots();
-
-        if (result.data.paymentRequired)
-            return setMessageDeposit(result.message);
-        toast.success(result.message);
-        router.push(`/bookRoom/${newBooking.id_booking}`);
     };
 
     return (
-        <div className="container">
-            {loading && <DynamicLoadingFullPage />}
-            {isPopupConfirm && (
-                <Popup
-                    handleClose={() => {
-                        setIsPopupConfirm(false);
-                    }}>
-                    <div className={style.formConfirm}>
-                        <p className={style.titleConfirm}>Xác nhận đặt phòng</p>
-                        <p className={style.contentConfirm}>{contentConfirm}</p>
-                        <div className={style.row}>
-                            <Button
-                                type={"button"}
-                                rounded_10
-                                red
-                                onClick={() => setIsPopupConfirm(false)}>
-                                Hủy
-                            </Button>
-                            <Button
-                                type={"button"}
-                                rounded_10
-                                yellowLinear
-                                onClick={() => {
-                                    setConfirmedOverDuration(true);
-                                    handleBookingFinal();
-                                }}>
-                                Vẫn tiếp tục
-                            </Button>
-                        </div>
-                    </div>
-                </Popup>
-            )}
-            {messageDeposit && (
-                <Popup handleClose={() => setMessageDeposit("")}>
-                    <div className={style.formConfirm}>
-                        <p className={style.titleConfirm}>Yêu cầu cọc trước</p>
-                        <p className={style.contentConfirm}>{messageDeposit}</p>
-                        <div className={style.row}>
-                            <Button
-                                type={"button"}
-                                rounded_10
-                                red
-                                onClick={() => pay("deposit")}>
-                                Thanh toán 50%
-                            </Button>
-                            <Button
-                                type={"button"}
-                                rounded_10
-                                yellowLinear
-                                onClick={() => pay("full")}>
-                                Thanh toán 100%
-                            </Button>
-                        </div>
-                    </div>
-                </Popup>
-            )}
-
-            <div className={style.container}>
-                <div className={style.fromInfor}>
-                    {user ? (
-                        <div className={style.welcome}>
-                            <p
-                                className={
-                                    style.username
-                                }>{`Hi ${user.name}`}</p>
-                            <p className={style.title}>
-                                Hãy đặt phòng để trải nghiệm dịch vụ của PNM -
-                                BOX
-                            </p>
-                            <p className={style.title}>
-                                Chúng tôi sẽ không để bạn thất vọng
-                            </p>
-                        </div>
-                    ) : (
-                        <>
-                            <div className={style.login}>
-                                Bạn đã có tài khoản?
-                                <Link href={PATH.Login}>Đăng nhập tại đây</Link>
-                            </div>
-                            <div className={style.infor}>
-                                <Input
-                                    rounded_10
-                                    color_black
-                                    placeholder={"Họ và tên"}
-                                    onChange={(e) =>
-                                        setGuest((g) => ({
-                                            ...g,
-                                            name: e.target.value,
-                                        }))
-                                    }
-                                    value={guest.name}
-                                />
-
-                                <Input
-                                    rounded_10
-                                    color_black
-                                    placeholder="Email"
-                                    onChange={(e) =>
-                                        setGuest((g) => ({
-                                            ...g,
-                                            email: e.target.value,
-                                        }))
-                                    }
-                                    value={guest.email}
-                                />
-
-                                <Input
-                                    rounded_10
-                                    color_black
-                                    placeholder="Số điện thoại"
-                                    onChange={(e) =>
-                                        setGuest((g) => ({
-                                            ...g,
-                                            phone: e.target.value,
-                                        }))
-                                    }
-                                    value={guest.phone}
-                                />
-                            </div>
-                        </>
+        <div className={style.page}>
+            <div className={style.main}>
+                <div className={style.head}>
+                    <h1>Chọn phòng và giờ</h1>
+                    {branches?.length > 0 && (
+                        <label className={style.branch}>
+                            Cơ sở
+                            <select
+                                value={branch || ''}
+                                onChange={(e) => setQuery({ branch: e.target.value, ...clearSelection })}
+                            >
+                                {branches.map((b) => (
+                                    <option key={b._id} value={b._id}>
+                                        {b.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
                     )}
                 </div>
 
-                <div className={style.formBookRoom}>
-                    <div className={style.form}>
-                        <div className={style.groupItems}>
-                            <p>Chọn phim</p>
-                            <SearchBar
-                                data={FilmOptions}
-                                onSelect={(item) => {
-                                    setSelectedFilm(item.id);
-                                }}
-                                heightImage={70}
-                                widthImage={50}
-                            />
-                        </div>
-                        <div className={style.groupItems}>
-                            {loadingFilm ? (
-                                <Lottie
-                                    animationData={loadingAnimation}
-                                    loop={true}
-                                    autoplay={true}
-                                    className={style.loading}
-                                />
-                            ) : (
-                                film && (
-                                    <div className={style.groupItems}>
-                                        <p>Phim bạn chọn</p>
-                                        <div className={style.filmItem}>
-                                            <div className={style.filmImage}>
-                                                <Image
-                                                    src={film.image}
-                                                    alt="film image"
-                                                    width={200}
-                                                    height={300}
-                                                    style={{
-                                                        objectFit: "cover",
-                                                    }} // dùng style thay vì objectFit props
-                                                />
-                                            </div>
-                                            <div className={style.filmContent}>
-                                                <p className={style.filmName}>
-                                                    {film.name}
-                                                </p>
-                                                <p className={style.subName}>
-                                                    {film.nameEnglish}
-                                                </p>
-                                                <p
-                                                    className={
-                                                        style.release_date
-                                                    }>
-                                                    {`Năm phát hành:\u2003${film.release_date}`}
-                                                </p>
-                                                <p
-                                                    className={
-                                                        style.duration
-                                                    }>{`Thời lượng:\u2003${film.duration}`}</p>
-                                                <p
-                                                    className={
-                                                        style.country
-                                                    }>{`Quốc gia:\u2003${film.country}`}</p>
-                                                <div
-                                                    className={
-                                                        style.Listcategory
-                                                    }>
-                                                    {`Thể loại:\u2003`}
-                                                    {film.category.map(
-                                                        (item, index) => (
-                                                            <div
-                                                                key={index}
-                                                                className={
-                                                                    style.category
-                                                                }>
-                                                                {item}
-                                                            </div>
-                                                        ),
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )
-                            )}
-                        </div>
-                        {filmId && (
-                            <div className={style.groupItems}>
-                                <p>Chọn cơ sở bạn muốn đến</p>
-                                <Selection
-                                    options={BranchOptions}
-                                    optionLabel="name"
-                                    defaultValue={selectedBranch}
-                                    optionValue="id"
-                                    onChange={handleBranchChange}
-                                />
-                            </div>
-                        )}
+                <DayPicker today={today} value={q.date} onChange={(date) => setQuery({ date, ...clearSelection })} />
 
-                        {selectedBranch && (
-                            <div className={clsx(style.groupItems, style.row)}>
-                                <div className={style.date}>
-                                    <p>Ngày đặt phòng</p>
-
-                                    <Calendar
-                                        selectedDate={selectedDate}
-                                        onChange={handleDateChange}
-                                        currentDay
-                                        disablePastDates
-                                    />
-                                </div>
-
-                                <div className={style.room}>
-                                    <p>Chọn loại phòng</p>
-                                    <Selection
-                                        options={TypeRoomOptions}
-                                        defaultValue={selectedTypeRoom}
-                                        optionLabel="name"
-                                        optionValue="id"
-                                        onChange={handleTypeRoomChange}
-                                    />
-                                </div>
-                            </div>
-                        )}
-                        <div className={clsx(style.groupItems, style.time)}>
-                            {selectedTypeRoom && (
-                                <div className={style.typeRoom}>
-                                    {rooms?.map((room) => (
-                                        <div
-                                            className={clsx(
-                                                style.room,
-                                                selectedRoom === room._id
-                                                    ? style.active
-                                                    : "",
-                                            )}
-                                            key={room._id}
-                                            onClick={() =>
-                                                handleSelectedRoom(room._id)
-                                            }>
-                                            <Image
-                                                src={room?.image}
-                                                alt={room.name}
-                                                width={100}
-                                                height={120}
-                                            />
-
-                                            {room.name}
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                            {selectedRoom && (
-                                <div className={style.timeFrame}>
-                                    {timeSlots.map((time) => {
-                                        const past = isPast(time);
-                                        const isDisabled = isUnavailable(time);
-
-                                        const slotContent = (
-                                            <div
-                                                key={time._id}
-                                                className={clsx(
-                                                    style.slot,
-                                                    selectedTimeSlots.includes(
-                                                        time._id,
-                                                    ) && style.activeSlot,
-                                                    isDisabled && style.disable,
-                                                )}
-                                                onClick={() => {
-                                                    if (!isDisabled)
-                                                        handleTimeSlotClick(
-                                                            time._id,
-                                                        );
-                                                }}>
-                                                {`${time.start_time} - ${time.end_time}`}
-                                            </div>
-                                        );
-
-                                        return isDisabled ? (
-                                            <Tippy
-                                                content={
-                                                    past
-                                                        ? "Khung giờ đã qua"
-                                                        : "Khung giờ này đã được đặt"
-                                                }
-                                                key={time._id}
-                                                placement="bottom"
-                                                theme="light-border">
-                                                <span>{slotContent}</span>
-                                            </Tippy>
-                                        ) : (
-                                            slotContent
-                                        );
-                                    })}
-                                </div>
-                            )}
-                        </div>
-
-                        {selectedTimeSlots.length > 0 && (
-                            <div className={style.row}>
-                                <div className={style.groupItems}>
-                                    <p>Chọn Combo</p>
-
-                                    <Selection
-                                        options={ComboOptions}
-                                        defaultValue={selectedCombo}
-                                        onChange={setSelectedCombo}
-                                    />
-                                </div>
-                                <div className={style.groupItems}>
-                                    <p>Mã giảm giá</p>
-                                    <Input
-                                        rounded_10
-                                        placeholder={"Nhập mã giảm giá"}
-                                        onChange={(e) =>
-                                            setSelectedDiscount(e.target.value)
-                                        }
-                                    />
-                                </div>
-                            </div>
-                        )}
-
-                        {estimate > 0 && (
-                            <div className={style.groupItems}>
-                                <p>
-                                    {`Tạm tính: ${formatMoney(estimate)} (${totalMinutes} phút${
-                                        selectedDiscount
-                                            ? ", chưa trừ mã giảm giá"
-                                            : ""
-                                    })`}
-                                </p>
-                                {estimate > PAYMENT_THRESHOLD && (
-                                    <p>{`Cần cọc tối thiểu ${formatMoney(Math.ceil(estimate / 2))} để giữ chỗ`}</p>
-                                )}
-                            </div>
-                        )}
-
-                        <Tippy
-                            content={errorMessage}
-                            placement="bottom"
-                            theme="light"
-                            disabled={!errorMessage}>
-                            <div className={style.groupItems}>
-                                <Button
-                                    rounded_10
-                                    redLinear
-                                    onClick={handleBooking}
-                                    disabled={!!errorMessage}>
-                                    Đặt phòng
-                                </Button>
-                            </div>
-                        </Tippy>
-                        <div className={clsx(style.groupItems, style.warning)}>
-                            <div className={style.title}>
-                                <AiOutlineWarning />
-                                <h5>Lưu ý</h5>
-                            </div>
-                            <p>
-                                - Các đơn đặt phòng trên 150.000 VNĐ vui lòng
-                                thanh toán trước 50% giá trị hóa đơn
-                            </p>
-                            <p>
-                                - Những tài khoản đặt phòng nhưng không đến và
-                                không báo lại cho PNM - BOX, chúng tôi xin phép
-                                khóa tài khoản.
-                            </p>
-                            <p>
-                                - PNM - BOX chỉ nhận đặt phòng qua website và
-                                fanpage facebook, chúng tôi không chịu trách
-                                nhiệm với những đơn đặt hằng qua nền tảng khác.
-                            </p>
-                        </div>
-                    </div>
-                    <Feedback />
+                <div className={style.toolbar}>
+                    <button type="button" className={style.toggle} onClick={() => setFullDay((v) => !v)}>
+                        {fullDay ? 'Chỉ xem từ buổi chiều' : 'Xem cả ngày'}
+                    </button>
                 </div>
+
+                {content()}
+
+                <ul className={style.legend} aria-label="Chú thích">
+                    <li>
+                        <span className={style.swatchSel} />
+                        Bạn chọn
+                    </li>
+                    <li>
+                        <span className={style.swatchFree} />
+                        Còn trống
+                    </li>
+                    <li>
+                        <span className={style.swatchBooked} />
+                        Đã có người đặt
+                    </li>
+                    <li className={style.legendHint}>
+                        Bấm một ô trống để chọn {formatDuration(duration)}, bấm ô xa hơn cùng hàng để kéo dài.
+                    </li>
+                </ul>
+            </div>
+
+            <aside className={style.aside} aria-label="Vé của bạn">
+                <BookingTicket rows={ticketRows} minutes={minutes} total={total} checkoutHref={checkoutHref} />
+            </aside>
+
+            {/* Cuống vé ghim đáy trên mobile */}
+            <div className={clsx(style.stub, range && style.stubShow)} aria-hidden={!range}>
+                <p>
+                    <strong>{range ? `Phòng ${room.name}, ${rangeLabel(slots, range)}` : ''}</strong>
+                    <span>Tạm tính {total.toLocaleString('vi-VN')}đ</span>
+                </p>
+                {checkoutHref && (
+                    <Button href={checkoutHref} tabIndex={range ? 0 : -1}>
+                        Giữ phòng
+                    </Button>
+                )}
             </div>
         </div>
     );
 };
+
 export default BookRoomPage;

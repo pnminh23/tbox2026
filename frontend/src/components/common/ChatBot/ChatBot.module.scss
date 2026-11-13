@@ -111,3 +111,20 @@
     border: none;
     cursor: pointer;
 }
+
+// Mobile: nhường đáy màn hình cho thanh "Đặt phòng / Giữ phòng" ghim đáy
+@media (max-width: 900px) {
+    .chatbotButton {
+        bottom: 104px;
+        right: 16px;
+        width: 52px;
+        height: 52px;
+    }
+    .chatbotWindow {
+        bottom: 168px;
+        right: 12px;
+        left: 12px;
+        width: auto;
+        height: min(500px, 60vh);
+    }
+}

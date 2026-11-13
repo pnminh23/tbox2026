@@ -4,3 +4,6 @@ export { default as Reveal } from './Reveal/Reveal';
 export { default as Skeleton } from './Skeleton/Skeleton';
 export { default as PriceTag } from './PriceTag/PriceTag';
 export { default as RouteProgress } from './RouteProgress/RouteProgress';
+export { default as DayPicker } from './DayPicker/DayPicker';
+export { default as TimeChips } from './TimeChips/TimeChips';
+export { default as TimeGrid } from './TimeGrid/TimeGrid';

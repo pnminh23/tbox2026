@@ -18,11 +18,6 @@ const useBookingApi = (path, options) => {
     return { data: data?.data, isLoading, isError: error, mutate: revalidate };
 };
 
-export const getBookedByDate = (roomID, day) =>
-    axiosInstance
-        .get(`${API_URL}/get-book-timeSlots-by-room/${roomID}/${day}`)
-        .then((r) => r.data.data);
-
 export const createBooking = async (bookingData) => {
     try {
         const { data } = await axiosInstance.post(

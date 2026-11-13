@@ -1,33 +1,18 @@
-import { useCallback, useEffect, useState } from "react";
-import { socket } from "../socket";
-import { getBookedByDate } from "../services/booking";
+import { useEffect, useRef } from 'react';
+import { socket } from '../socket';
 
-const EVENTS = ["newBooking", "editBooking"];
+const EVENTS = ['newBooking', 'editBooking'];
 
-/**
- * Khung giờ đã có người giữ của 1 phòng trong ngày (day: 'YYYY-MM-DD').
- * Tải lại khi có đơn mới/đổi trạng thái ở cùng phòng.
- */
-export const useBookingsRealtime = (roomID, day) => {
-    const [roomData, setRoomData] = useState(null);
-
-    const loadData = useCallback(async () => {
-        if (!roomID || !day) return setRoomData(null);
-        try {
-            setRoomData(await getBookedByDate(roomID, day));
-        } catch {
-            setRoomData(null);
-        }
-    }, [roomID, day]);
+/** Gọi `onChange(booking)` mỗi khi có đơn mới hoặc đơn đổi trạng thái (qua socket). */
+export const useBookingEvents = (onChange) => {
+    const handler = useRef(onChange);
+    handler.current = onChange;
 
     useEffect(() => {
-        loadData();
-        const onChange = (booking) =>
-            String(booking?.room?._id ?? booking?.room) === String(roomID) &&
-            loadData();
-        EVENTS.forEach((e) => socket.on(e, onChange));
-        return () => EVENTS.forEach((e) => socket.off(e, onChange));
-    }, [roomID, loadData]);
-
-    return roomData;
+        const listener = (booking) => handler.current?.(booking);
+        EVENTS.forEach((e) => socket.on(e, listener));
+        return () => EVENTS.forEach((e) => socket.off(e, listener));
+    }, []);
 };
+
+export default useBookingEvents;
