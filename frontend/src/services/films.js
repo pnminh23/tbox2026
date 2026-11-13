@@ -29,6 +29,9 @@ export const useAllFilms = () => {
     const mutateFilms = () => mutate(endpoint);
     return {
         films: data?.data,
+        isLoading,
+        isError: error,
+        // tên cũ, giữ cho các trang admin
         isLoadingAllFimls: isLoading,
         isErrorAllFimls: error,
         mutateFilms,

@@ -1,141 +1,58 @@
-// components/NewsDetail.jsx (hoặc tên file của bạn)
-import { useState, useEffect } from 'react'; // Thêm useState và useEffect
-import styles from './NewsDetail.module.scss';
-import Banner from '@/components/common/Banner';
-import Title from '@/components/common/Title';
-// News import from '@/pages/news/[_id]' is likely not needed here if this component is used on that page.
-// If NewsDetail IS the page component for /news/[_id], then this import is circular.
-// Assuming NewsDetail is a component used ON that page.
-import { useAllNews } from '@/services/news';
 import Image from 'next/image';
 import Link from 'next/link';
-import Button from '@/components/common/Button';
-import noImage from '@public/static/img/avatar/no_image.jpg';
+import { Button, Skeleton } from '@/components/ui';
+import NewsItem from '@/components/common/NewsItem';
+import { useAllNews } from '@/services/news';
+import { PATH } from '@/constants/config';
+import styles from './NewsDetail.module.scss';
 
-const ITEMS_PER_PAGE = 5; // Số lượng tin tức hiển thị mỗi lần "Xem thêm"
+/** Bài viết: nội dung HTML đã được backend lọc (sanitize) khi lưu. */
+const NewsDetail = ({ news, isLoading }) => {
+    const { allNews } = useAllNews();
+    const others = allNews?.filter((n) => n._id !== news?._id).slice(0, 5) || [];
 
-const NewsDetail = ({ news }) => {
-    const { allNews, isLoading: loadingAllNews } = useAllNews();
-    const [visibleNewsCount, setVisibleNewsCount] = useState(ITEMS_PER_PAGE);
-
-    // Lọc ra các tin khác với tin hiện tại đang xem (nếu cần)
-    // và chỉ lấy những tin có _id để tránh lỗi nếu dữ liệu chưa đầy đủ
-    const otherNews = allNews?.filter((n) => n._id && n._id !== news?._id) || [];
-
-    const handleLoadMore = () => {
-        setVisibleNewsCount((prevCount) => Math.min(prevCount + ITEMS_PER_PAGE, otherNews.length));
-    };
-
-    // Reset visible count if the main news article changes or if allNews list changes
-    useEffect(() => {
-        setVisibleNewsCount(ITEMS_PER_PAGE);
-    }, [news?._id, allNews]);
-
-    const displayedSideNews = otherNews.slice(0, visibleNewsCount);
-    const canLoadMore = visibleNewsCount < otherNews.length;
+    if (isLoading) return <Skeleton h={480} radius={14} className={styles.loading} />;
+    if (!news)
+        return (
+            <div className={styles.state}>
+                <h1>Không tìm thấy bài viết</h1>
+                <Button href={PATH.News}>Xem tin khác</Button>
+            </div>
+        );
 
     return (
-        <>
-            <Banner />
-            <div className="container">
-                <div className={styles.NewsDetailWrapper}>
-                    <div className={styles.contentContainer}>
-                        <Title>{news?.title}</Title>
-                        <div className={styles.imageWrapper}>
-                            {news?.image && ( // Kiểm tra news?.image trước khi dùng
-                                <Image
-                                    src={news?.image || noImage}
-                                    alt={news?.title || 'image'}
-                                    fill
-                                    sizes="100vw"
-                                    priority
-                                />
-                            )}
-                        </div>
-                        <div className={styles.detail} dangerouslySetInnerHTML={{ __html: news?.content }} />
-                        <div className={styles.date}>
-                            {news?.createdAt &&
-                                new Date(news.createdAt).toLocaleString('vi-VN', {
-                                    day: '2-digit',
-                                    month: '2-digit',
-                                    year: 'numeric',
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                })}
-                        </div>
+        <div className={styles.page}>
+            <article className={styles.article}>
+                <Link href={PATH.News} className={styles.back}>
+                    Tất cả tin tức
+                </Link>
+                <h1>{news.title}</h1>
+                <time dateTime={news.createdAt} className={styles.date}>
+                    {new Date(news.createdAt).toLocaleDateString('vi-VN', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                    })}
+                </time>
+                {news.image && (
+                    <div className={styles.cover}>
+                        <Image src={news.image} alt="" fill priority sizes="(max-width: 900px) 100vw, 760px" />
                     </div>
-
-                    <div className={styles.navbar}>
-                        <div className={styles.title}>
-                            <p>TIN TỨC NỔI BẬT</p>
-                        </div>
-                        {loadingAllNews && <p>Đang tải tin tức...</p>}
-                        {!loadingAllNews && displayedSideNews.length === 0 && <p>Không có tin nổi bật nào.</p>}
-                        {displayedSideNews.map(
-                            (
-                                newsItem // đổi tên biến để không trùng với 'news' prop
-                            ) => (
-                                <div className={styles.newsItem} key={newsItem._id}>
-                                    {' '}
-                                    {/* Thêm key cho list item */}
-                                    <div className={styles.imageItem}>
-                                        {newsItem.image && ( // Kiểm tra image trước khi dùng
-                                            <Image
-                                                src={newsItem.image}
-                                                alt={newsItem.title || 'image'}
-                                                fill
-                                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                                            />
-                                        )}
-                                    </div>
-                                    <div className={styles.contentItem}>
-                                        {/* Sử dụng Link component của Next.js cho internal navigation.
-                                      Bỏ legacyBehavior nếu bạn không dùng thẻ <a> bên trong Link với mục đích style đặc biệt
-                                      mà Link không tự xử lý được. Với Next.js 13+, thẻ <a> không còn cần thiết bên trong Link.
-                                    */}
-                                        <Link href={`/news/${newsItem._id}`} className={styles.link}>
-                                            {newsItem.title}
-                                        </Link>
-                                        <div className={styles.date}>
-                                            {newsItem.createdAt &&
-                                                new Date(newsItem.createdAt).toLocaleString('vi-VN', {
-                                                    day: '2-digit',
-                                                    month: '2-digit',
-                                                    year: 'numeric',
-                                                    // Bỏ giờ và phút cho danh sách rút gọn nếu muốn
-                                                    // hour: '2-digit',
-                                                    // minute: '2-digit',
-                                                })}
-                                        </div>
-                                    </div>
-                                </div>
-                            )
-                        )}
-                        {/* Nút Xem thêm */}
-                        {!loadingAllNews && canLoadMore && (
-                            <Button
-                                rounded_10
-                                grey
-                                onClick={handleLoadMore}
-                                // Thêm class cho button để style
-                            >
-                                Xem thêm
-                            </Button>
-                        )}
-                        {!loadingAllNews &&
-                            !canLoadMore &&
-                            displayedSideNews.length > 0 &&
-                            displayedSideNews.length === otherNews.length && (
-                                <Button
-                                    disabled // Disable nút khi đã hết tin
-                                >
-                                    Đã hiển thị tất cả
-                                </Button>
-                            )}
-                    </div>
-                </div>
-            </div>
-        </>
+                )}
+                <div className={styles.content} dangerouslySetInnerHTML={{ __html: news.content }} />
+                <Button href={PATH.BookRoom} size="lg">
+                    Đặt phòng ngay
+                </Button>
+            </article>
+            {others.length > 0 && (
+                <aside className={styles.aside} aria-labelledby="other-news">
+                    <h2 id="other-news">Tin khác</h2>
+                    {others.map((n) => (
+                        <NewsItem key={n._id} news={n} compact />
+                    ))}
+                </aside>
+            )}
+        </div>
     );
 };
 

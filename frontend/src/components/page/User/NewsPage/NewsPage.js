@@ -1,47 +1,35 @@
-import Banner from '@/components/common/Banner';
-import styles from './NewsPage.module.scss';
+import { useState } from 'react';
+import { Button, PageIntro, Skeleton } from '@/components/ui';
 import NewsItem from '@/components/common/NewsItem';
-import ReactPaginate from 'react-paginate';
-import { AiOutlineLeft, AiOutlineRight } from 'react-icons/ai';
-import { useEffect, useRef, useState } from 'react';
-import Title from '@/components/common/Title';
 import { useAllNews } from '@/services/news';
-import Pagination from '@/components/common/Pagonation';
+import styles from './NewsPage.module.scss';
+
+const PAGE = 9;
 
 const NewsPage = () => {
-    const { allNews, isLoading: loadingAllNews } = useAllNews();
-    const [currentPage, setCurrentPage] = useState(1);
-    const [limit, setLimit] = useState(5);
-    const totalItems = allNews?.length || 0;
-    const totalPages = Math.ceil(totalItems / limit);
-    const paginatedNews = allNews?.slice((currentPage - 1) * limit, currentPage * limit) || [];
+    const { allNews, isLoading, error } = useAllNews();
+    const [shown, setShown] = useState(PAGE);
 
     return (
         <>
-            <Banner />
-            <div className="container">
-                <Title>Khuyến mãi</Title>
-                <div className={styles.content}>
-                    <div className={styles.allFilm}>
-                        {paginatedNews?.map((news) => (
-                            <NewsItem key={news.id} news={news} />
-                        ))}
-                    </div>
-
-                    <Pagination
-                        // className={styles.pagination}
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        totalItems={totalItems}
-                        limit={limit}
-                        onPageChange={(page) => setCurrentPage(page)}
-                        onLimitChange={(newLimit) => {
-                            setLimit(newLimit);
-                            setCurrentPage(1); // reset về trang đầu
-                        }}
-                    />
+            <PageIntro title="Tin tức và khuyến mãi" lead="Ưu đãi mới, combo theo mùa và tin từ các cơ sở PNM BOX." />
+            <section className={styles.section} aria-busy={isLoading || undefined}>
+                {error && <p role="alert">Chưa tải được tin tức, bạn thử tải lại trang nhé.</p>}
+                <div className={styles.grid}>
+                    {isLoading && Array.from({ length: 6 }, (_, i) => <Skeleton key={i} h={320} radius={14} />)}
+                    {allNews?.slice(0, shown).map((news) => (
+                        <NewsItem key={news._id} news={news} />
+                    ))}
                 </div>
-            </div>
+                {allNews?.length === 0 && <p className={styles.muted}>Chưa có tin nào.</p>}
+                {allNews?.length > shown && (
+                    <div className={styles.more}>
+                        <Button variant="outline" onClick={() => setShown((n) => n + PAGE)}>
+                            Xem thêm tin
+                        </Button>
+                    </div>
+                )}
+            </section>
         </>
     );
 };

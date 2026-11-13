@@ -18,11 +18,8 @@ export const useAllNews = () => {
 };
 
 export const useNews = (_id) => {
-    const endpoint = `${API_URL}/get/${_id}`;
-    const { data, error, isLoading } = useSWR(endpoint, fetcher, {
-        shouldRetryOnError: true,
-        revalidateOnFocus: true,
-    });
+    const endpoint = _id ? `${API_URL}/get/${_id}` : null;
+    const { data, error, isLoading } = useSWR(endpoint, fetcher);
 
     return {
         news: data?.data,

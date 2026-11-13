@@ -1,20 +1,19 @@
+import { useRouter } from 'next/router';
 import PageHead from '@/components/common/PageHead/PageHead';
 import LayoutUser from '@/layout/LayoutUser/LayoutUser';
 import NewsDetail from '@/components/page/User/NewsDetail';
-import { useRouter } from 'next/router';
 import { useNews } from '@/services/news';
+
 export default function News() {
-    const router = useRouter();
-    const { _id } = router.query;
-    const { news } = useNews(_id);
+    const { _id } = useRouter().query;
+    const { news, isLoading } = useNews(_id);
 
     return (
         <>
-            <PageHead title="Chi tiết tin tức" />
-            <NewsDetail news={news} />
+            <PageHead title={news?.title || 'Tin tức'} />
+            <NewsDetail news={news} isLoading={isLoading || !_id} />
         </>
     );
 }
-News.getLayout = function getLayout(page) {
-    return <LayoutUser>{page}</LayoutUser>;
-};
+
+News.getLayout = (page) => <LayoutUser>{page}</LayoutUser>;

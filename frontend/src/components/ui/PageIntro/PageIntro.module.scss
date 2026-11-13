@@ -1,0 +1,22 @@
+@use 'motion' as *;
+
+.intro {
+    @include container;
+    padding-top: 48px;
+    padding-bottom: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    animation: fade-up 0.5s var(--ease-out) backwards;
+    h1 {
+        @include display(clamp(44px, 7vw, 80px));
+        margin: 0;
+    }
+    p {
+        margin: 0;
+        max-width: 620px;
+        color: var(--text-muted);
+        font-size: 17px;
+        line-height: 1.65;
+    }
+}

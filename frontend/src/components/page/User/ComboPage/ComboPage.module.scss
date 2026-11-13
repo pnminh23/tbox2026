@@ -1,180 +1,134 @@
-.listCombo {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 30px;
-    flex-wrap: wrap;
-    .combo {
-        display: flex;
-        width: 30%;
-        padding: 20px 15px;
-        flex-direction: column;
-        align-items: center;
-        gap: 30px;
-        border-radius: 10px;
-        background: linear-gradient(180deg, #444 0%, #1a1a1a 50%, #151515 100%);
-        box-shadow: 2px 4px 4px 2px rgba(0, 0, 0, 0.25);
-        .title {
-            font-size: 20px;
-            letter-spacing: 0.4px;
-            font-weight: 700;
-        }
-        .utility {
-            display: flex;
-            height: 150px;
-            flex-direction: column;
-            align-items: center;
-            gap: 15px;
-        }
-        .price {
-            width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 20px;
-            .item {
-                width: 100px;
-                display: flex;
-                align-items: center;
-                flex-direction: column;
-                justify-content: center;
-                height: 100px;
-                // border: 3px solid transparent; /* đường viền trong suốt */
-                border-radius: 10px;
-                // background: linear-gradient(#232323, #232323) padding-box,
-                //     /* nền trong */ linear-gradient(#efeb77 0%, #f3b817 100%) border-box; /* viền gradient */
-                background: linear-gradient(135deg, #f9d423, #ece9e6);
+@use 'motion' as *;
 
-                /* xám đậm nhẹ */
-                color: #151515;
-                border: 1px solid #444;
-
-                .nameCombo {
-                    font-size: 16px;
-                    font-weight: 700;
-                    margin-bottom: 10px;
-                }
-            }
-        }
-    }
+.section {
+    @include container;
+    padding-top: 32px;
 }
 
-.comboDecorate {
-    margin-top: 30px;
-    position: relative;
+.muted {
+    color: var(--text-muted);
+}
+
+.list {
     display: flex;
-    padding: 14px 0;
     flex-direction: column;
-    align-items: center;
-    gap: 30px;
-    flex-shrink: 0;
-    width: 100%;
-    z-index: 0;
-    overflow: hidden;
+    gap: 20px;
+}
 
-    &::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: url('../../../../../public/static/img/background/combo_decorate.jpg') lightgray 50% / cover
-            no-repeat;
-        opacity: 0.5;
-        z-index: -1;
+.main {
+    padding: 24px 26px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    h2 {
+        @include display(32px);
+        margin: 0;
     }
-
-    .titleDecerate {
-        font-size: 24px;
-        font-style: normal;
-        font-weight: 700;
-        line-height: normal;
-        letter-spacing: 0.48px;
+    p {
+        margin: 0;
+        color: var(--ink-muted);
     }
+}
 
-    .params {
-        width: 100%;
-        max-width: 750px;
-        color: #fff;
-        text-align: center;
+.duration {
+    font-weight: 600;
+    color: var(--ink) !important;
+}
+
+.prices {
+    list-style: none;
+    margin: 10px 0 0;
+    padding: 0;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    li {
+        display: flex;
+        flex-direction: column;
+        padding: 8px 14px;
+        border-radius: var(--radius-sm);
+        background: #ecdfca;
         font-size: 14px;
-        font-style: normal;
-        line-height: 20px; /* 142.857% */
-    }
-
-    .slider {
-        overflow: hidden;
-        width: 50%;
-        position: relative;
-        .swiperContent {
-            padding: 0 30px;
-        }
-        img {
-            width: 100%;
-            height: 150px;
-            object-fit: cover; // Đảm bảo ảnh lấp đầy khung hình mà không bị méo
-        }
-
-        .prevButton,
-        .nextButton {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #ccc;
-            background-color: rgba(0, 0, 0, 0.4);
-            width: 40px;
-            height: 40px;
-            z-index: 10;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            border-radius: 50%;
-        }
-
-        .prevButton {
-            left: 0;
-            z-index: 3;
-        }
-
-        .nextButton {
-            right: 0;
-            z-index: 3;
-        }
-    }
-    .button {
-        width: 50%;
     }
 }
-.roomByBranch {
+
+.stub {
+    height: 100%;
+    min-width: 180px;
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px;
+    small {
+        font-weight: 600;
+    }
+    strong {
+        font-family: var(--font-display), sans-serif;
+        font-weight: 900;
+        font-size: 52px;
+        line-height: 1;
+    }
+}
+
+.stubLink {
+    margin-top: 6px;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--ink);
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    &:hover {
+        color: var(--ink);
+    }
+}
+
+.decor {
+    @include container;
+    padding-top: 96px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+    gap: 40px;
+    align-items: center;
+    @media (max-width: 900px) {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.decorText {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+    h2 {
+        @include display(clamp(36px, 5vw, 52px), 800);
+        margin: 0;
+    }
+    p {
+        margin: 0;
+        color: var(--text-muted);
+        line-height: 1.7;
+    }
+}
+
+.decorGrid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.decorImg {
     position: relative;
-    select {
-        position: absolute;
-        top: 10px;
-        left: 245px;
-        width: 250px;
-        padding: 5px 10px;
-        font-size: 12px;
-        border: 1.5px solid #ccc;
-        border-radius: 10px;
-        background-color: #232323;
-        color: #fff;
-        transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        appearance: none;
-        background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg width='14' height='8' viewBox='0 0 14 8' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l6 6 6-6' stroke='%23999' stroke-width='2' fill='none' fill-rule='evenodd'/%3E%3C/svg%3E");
-        background-repeat: no-repeat;
-        background-position: right 12px center;
-        background-size: 12px;
+    aspect-ratio: 4 / 3;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    img {
+        object-fit: cover;
+        transition: transform 0.6s var(--ease-out);
     }
-}
-
-// Mobile: ô chọn cơ sở xuống dòng riêng thay vì đè lên tiêu đề slider
-@media screen and (max-width: 768px) {
-    .roomByBranch select {
-        position: static;
-        width: 100%;
-        margin: 10px 0 0;
+    &:hover img {
+        transform: scale(1.05);
     }
 }
