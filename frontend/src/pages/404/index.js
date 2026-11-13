@@ -1,22 +1,30 @@
-// pages/404.js
-import Link from 'next/link';
+import PageHead from '@/components/common/PageHead/PageHead';
+import LayoutUser from '@/layout/LayoutUser/LayoutUser';
+import { Button } from '@/components/ui';
+import { PATH } from '@/constants/config';
 import style from './Pages404.module.scss';
-import plugImage from '@public/static/img/background/Group_310.svg';
-import Image from 'next/image';
 
 export default function Custom404() {
     return (
-        <div className={style.container}>
-            <div className={style.content}>
-                <h1>404</h1>
-                <p>Rất tiếc, trang bạn yêu cầu không tìm thấy, vui lòng quay lại trang chủ</p>
-                <Link href="/" className={style.button}>
-                    Quay về trang chủ
-                </Link>
+        <section className={style.page}>
+            <PageHead title="Không tìm thấy trang" />
+            <p className={style.code} aria-hidden="true">
+                404
+            </p>
+            <h1>Phòng này không có trên bản đồ</h1>
+            <p className={style.lead}>
+                Đường dẫn sai hoặc trang đã bị gỡ. Bạn quay lại trang chủ hoặc đặt phòng luôn nhé.
+            </p>
+            <div className={style.actions}>
+                <Button href={PATH.BookRoom} size="lg">
+                    Đặt phòng
+                </Button>
+                <Button href="/" variant="outline" size="lg">
+                    Về trang chủ
+                </Button>
             </div>
-            <div className={style.image}>
-                <Image src={plugImage} alt="ảnh" className={style.svg} />
-            </div>
-        </div>
+        </section>
     );
 }
+
+Custom404.getLayout = (page) => <LayoutUser>{page}</LayoutUser>;
