@@ -1,9 +1,9 @@
 import mongoose from 'mongoose';
-import { env } from './enviroment.js';
+import { env } from './env.js';
 
-const CONNECT_DB = async () => {
+const connectDB = async () => {
     mongoose.connection.on('connected', () => console.log('Database connected!'));
-    await mongoose.connect(`${env.MONGODB_URI}/tbox`);
+    await mongoose.connect(env.MONGODB_URI, { dbName: env.DATABASE_NAME });
 };
 
-export default CONNECT_DB;
+export default connectDB;

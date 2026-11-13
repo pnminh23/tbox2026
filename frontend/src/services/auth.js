@@ -1,110 +1,52 @@
-import axiosInstance from "../config/axios";
+import { mutate } from "swr";
+import axiosInstance, { TOKEN_KEY, errorMessage } from "../config/axios";
+import { USER_ENDPOINT } from "./account";
 
 const API_URL = `/api/auth`;
 
+// POST và ném message lỗi dạng string (component hiển thị bằng toast)
+const post = (path, body, fallback) =>
+    axiosInstance
+        .post(`${API_URL}${path}`, body)
+        .then((res) => res.data)
+        .catch((err) => {
+            throw errorMessage(err, fallback);
+        });
+
 export const login = async (email, password) => {
-    try {
-        const response = await axiosInstance.post(`${API_URL}/login`, {
-            email,
-            password,
-        });
-
-        // Lưu token vào localStorage nếu server trả về (ngrok mode)
-        if (response.data.token) {
-            localStorage.setItem("token", response.data.token);
-            console.log("✅ Token saved to localStorage");
-        }
-
-        return response.data;
-    } catch (error) {
-        throw error.response?.data?.message || "Đăng nhập thất bại!";
-    }
-};
-
-export const register = async (name, phone, email, password) => {
-    try {
-        const response = await axiosInstance.post(`${API_URL}/register`, {
-            name,
-            phone,
-            email,
-            password,
-        });
-        return response.data;
-    } catch (error) {
-        throw error.response?.data?.message || "Đăng ký thất bại!";
-    }
-};
-
-export const verifyAccount = async (email, otp) => {
-    try {
-        const response = await axiosInstance.post(`${API_URL}/verify-account`, {
-            email,
-            otp,
-        });
-        return response.data;
-    } catch (error) {
-        throw error.response?.data?.message || "Đăng ký thất bại!";
-    }
-};
-
-export const forgotPassword = async (email) => {
-    try {
-        const response = await axiosInstance.post(`${API_URL}/forgotPassword`, {
-            email,
-        });
-        return response.data;
-    } catch (error) {
-        throw error.response?.data?.message || "Đăng ký thất bại!";
-    }
+    const data = await post(
+        "/login",
+        { email, password },
+        "Đăng nhập thất bại!",
+    );
+    if (data.token) localStorage.setItem(TOKEN_KEY, data.token);
+    await mutate(USER_ENDPOINT);
+    return data;
 };
 
 export const logout = async () => {
     try {
-        const response = await axiosInstance.post(`${API_URL}/logout`, {});
-
-        // Xóa token khỏi localStorage
-        localStorage.removeItem("token");
-        console.log("✅ Token removed from localStorage");
-
-        return response.data;
-    } catch (error) {
-        // Vẫn xóa token dù API call fail
-        localStorage.removeItem("token");
-        throw error.response?.data?.message || "Đăng xuất thất bại!";
+        return await post("/logout", {}, "Đăng xuất thất bại!");
+    } finally {
+        localStorage.removeItem(TOKEN_KEY);
+        await mutate(USER_ENDPOINT, undefined, { revalidate: false });
     }
 };
 
-export const resendOtp = async (email) => {
-    try {
-        const response = await axiosInstance.post(`${API_URL}/resend-otp`, {
-            email,
-        });
-        return response.data;
-    } catch (error) {
-        throw error.response?.data?.message || "Gửi lại OTP thất bại";
-    }
-};
+export const register = (name, phone, email, password) =>
+    post("/register", { name, phone, email, password }, "Đăng ký thất bại!");
 
-export const verifyOtpResetPassword = async (email, otp) => {
-    try {
-        const response = await axiosInstance.post(
-            `${API_URL}/verify-otp-reset-password`,
-            { email, otp }
-        );
-        return response.data;
-    } catch (error) {
-        throw error.response?.data?.message || "Xác nhận OTP thất bại";
-    }
-};
+export const verifyAccount = (email, otp) =>
+    post("/verify-account", { email, otp }, "Xác thực thất bại!");
 
-export const resetPassword = async (email, password) => {
-    try {
-        const response = await axiosInstance.post(`${API_URL}/reset-password`, {
-            email,
-            password,
-        });
-        return response.data;
-    } catch (error) {
-        throw error.response?.data?.message || "Đổi mật khẩu thất bại";
-    }
-};
+export const resendOtp = (email) =>
+    post("/resend-otp", { email }, "Gửi lại OTP thất bại");
+
+export const forgotPassword = (email) =>
+    post("/forgotPassword", { email }, "Gửi OTP thất bại!");
+
+export const verifyOtpResetPassword = (email, otp) =>
+    post("/verify-otp-reset-password", { email, otp }, "Xác nhận OTP thất bại");
+
+export const resetPassword = (email, password) =>
+    post("/reset-password", { email, password }, "Đổi mật khẩu thất bại");

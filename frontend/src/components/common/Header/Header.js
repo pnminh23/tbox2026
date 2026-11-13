@@ -1,6 +1,6 @@
 import { useRouter } from 'next/router';
 import { useState, useEffect, useRef } from 'react';
-import { getdata, useUserData } from '@/services/account';
+import { useUserData } from '@/services/account';
 import { logout } from '@/services/auth';
 import { AiOutlineLogout, AiOutlineIdcard } from 'react-icons/ai';
 import logoSrc from '../../../../public/static/img/logoBOX.svg';
@@ -21,7 +21,6 @@ const Header = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     const { user, isLoading, isError } = useUserData();
-    console.log('role user:', user?.role);
     useEffect(() => {
         setActivePath(router.pathname);
     }, [router.pathname]);

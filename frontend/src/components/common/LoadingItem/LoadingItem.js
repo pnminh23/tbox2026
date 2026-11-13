@@ -11,9 +11,7 @@ const LoadingItem = () => {
         const fetchAnimation = async () => {
             try {
                 const res = await fetch('/animations/loadingItem.json');
-                console.log('Fetch status:', res.status); // 👈
                 const data = await res.json();
-                console.log('Lottie data:', data); // 👈
                 setAnimationData(data);
             } catch (err) {
                 console.error('Failed to load animation', err); // 👈
@@ -21,7 +19,6 @@ const LoadingItem = () => {
         };
         fetchAnimation();
     }, []);
-    console.log('animation', animationData);
 
     if (!animationData) return <p>Loading...</p>;
 

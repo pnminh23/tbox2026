@@ -95,7 +95,8 @@
     }
 
     .params {
-        width: 750px;
+        width: 100%;
+        max-width: 750px;
         color: #fff;
         text-align: center;
         font-size: 14px;
@@ -166,5 +167,14 @@
         background-repeat: no-repeat;
         background-position: right 12px center;
         background-size: 12px;
+    }
+}
+
+// Mobile: ô chọn cơ sở xuống dòng riêng thay vì đè lên tiêu đề slider
+@media screen and (max-width: 768px) {
+    .roomByBranch select {
+        position: static;
+        width: 100%;
+        margin: 10px 0 0;
     }
 }

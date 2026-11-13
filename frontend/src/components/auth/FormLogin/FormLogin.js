@@ -18,7 +18,7 @@ const DynamicLoadingFullPage = dynamic(
     {
         ssr: false, // Tùy chọn QUAN TRỌNG nhất
         loading: () => null, // Optional: có thể trả về null hoặc một div trống trong lúc chờ load
-    }
+    },
 );
 import { useRouter } from "next/router";
 import { PATH } from "@/constants/config";
@@ -73,14 +73,12 @@ const FormLogin = () => {
 
             if (response.success) {
                 toast.success("Đăng nhập thành công!");
-                localStorage.setItem("email", email);
-                
-                // Redirect theo role
-                const redirectPath = response.role === 'admin' ? '/admin' : '/';
-                
-                setTimeout(() => {
-                    router.push(redirectPath);
-                }, 1500);
+                localStorage.setItem("email", email); // gợi ý sẵn ở form quên mật khẩu
+                router.push(
+                    response.role === "admin"
+                        ? PATH.BookRoomManagement
+                        : PATH.Home,
+                );
             } else {
                 toast.error(response.message);
             }
@@ -145,13 +143,13 @@ const FormLogin = () => {
                                         setPassword(e.target.value);
                                         validateInput(
                                             "password",
-                                            e.target.value
+                                            e.target.value,
                                         );
                                     }}
                                     onBlur={(e) =>
                                         validateInput(
                                             "password",
-                                            e.target.value
+                                            e.target.value,
                                         )
                                     }
                                 />

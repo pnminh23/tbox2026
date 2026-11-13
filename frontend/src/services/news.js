@@ -1,9 +1,7 @@
 import useSWR, { mutate } from "swr";
-import axiosInstance from "../config/axios";
+import axiosInstance, { fetcher } from "../config/axios";
 
 const API_URL = `/api/news`;
-
-const fetcher = (url) => axiosInstance.get(url).then((res) => res.data);
 
 export const useAllNews = () => {
     const endpoint = `${API_URL}/get-all`;

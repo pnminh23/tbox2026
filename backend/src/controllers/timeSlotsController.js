@@ -1,52 +1,25 @@
 import timeSlotModel from '../models/timeSlotModel.js';
-import { formatString } from '../services/formatString.js';
+import { asyncHandler, fail, ok } from '../utils/http.js';
 
-export const createTimeSlots = async (req, res) => {
-    let { start_time, end_time } = req.body;
-    if (!start_time || !end_time)
-        return res.status(400).json({ success: false, message: 'Hãy nhập đẩy đủ các trường' });
+const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
+const toMinutes = (hhmm) => hhmm.split(':').reduce((h, m) => h * 60 + Number(m));
 
-    try {
-        const existingTimeSlots = await timeSlotModel.findOne({ start_time });
-        if (existingTimeSlots) return res.status(400).json({ success: false, message: 'Khung giờ này đã tồn tại' });
+export const createTimeSlots = asyncHandler(async (req, res) => {
+    const { start_time, end_time } = req.body;
+    if (!HHMM.test(start_time) || !HHMM.test(end_time)) fail(400, 'Giờ phải có dạng HH:mm');
 
-        start_time = formatString(start_time);
-        end_time = formatString(end_time);
+    // Cho phép khung giờ kết thúc lúc 00:00 (qua nửa đêm)
+    const duration = (toMinutes(end_time) - toMinutes(start_time) + 1440) % 1440;
+    if (!duration) fail(400, 'Giờ kết thúc phải sau giờ bắt đầu');
 
-        const start = new Date(`1970-01-01T${start_time}:00Z`);
-        console.log('start:', start);
+    ok(
+        res,
+        await timeSlotModel.create({ start_time, end_time, slot_duration: duration }),
+        'Thêm khung giờ mới thành công',
+        201,
+    );
+});
 
-        const end = new Date(`1970-01-01T${end_time}:00Z`);
-        const duration = (end - start) / (1000 * 60);
-        console.log('duration:', duration);
-
-        if (duration <= 0)
-            return res.status(400).json({ success: false, message: 'Giờ kết thúc phải sau giờ bắt đầu' });
-
-        await timeSlotModel.create({
-            start_time,
-            end_time,
-            slot_duration: duration,
-        });
-
-        return res.status(200).json({ success: true, message: 'Thêm khung giờ mới thành công' });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-};
-
-export const getAllTimeSlots = async (req, res) => {
-    try {
-        const timeSlots = await timeSlotModel.find({}).sort({ start_time: 1 });
-
-        if (timeSlots.length === 0)
-            return res.status(400).json({ success: false, message: 'Không có khung giờ nào trong cơ sở dữ liệu' });
-
-        return res.status(200).json({
-            success: true,
-            data: timeSlots,
-        });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-};
+export const getAllTimeSlots = asyncHandler(async (req, res) =>
+    ok(res, await timeSlotModel.find().sort({ start_time: 1 })),
+);

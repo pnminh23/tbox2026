@@ -7,10 +7,9 @@ import Selection from '@/components/common/Selection';
 import { useRoomByBranch } from '@/services/room';
 import clsx from 'clsx';
 import dayjs from 'dayjs';
-import { editBooking, useBookingById, useCurrentActiveRoomsWithBookingId } from '@/services/booking';
+import { useBookingById, useCurrentActiveRoomsWithBookingId } from '@/services/booking';
 import { formatMoney } from '@/function/formatMoney';
-import { toast } from 'react-toastify';
-import { createPayment } from '@/services/payment';
+import useBookingActions from '@/hooks/useBookingActions';
 const dateNow = new Date();
 const BookingManger = () => {
     const [selectedBranch, setSelectedBranch] = useState('');
@@ -25,66 +24,7 @@ const BookingManger = () => {
         id: branch._id,
     }));
 
-    const handleCompleteBooking = async () => {
-        if (!booking) return; // Đảm bảo đã có booking được chọn
-
-        try {
-            // Gọi service với status mới
-            const result = await editBooking(booking._id, {
-                status: 'HOÀN THÀNH',
-            });
-            if (result.success) {
-                toast.success('Đã hoàn tất đơn đặt phòng!');
-            }
-        } catch (error) {
-            toast.error(error.message || 'Có lỗi xảy ra khi hoàn tất đơn.');
-            console.error(error);
-        }
-    };
-    const handleCancelBooking = async () => {
-        if (!booking) return; // Đảm bảo đã có booking được chọn
-
-        // Thêm một bước xác nhận trước khi hủy
-        if (!window.confirm(`Bạn có chắc muốn hủy đơn hàng "${booking._id}" không?`)) {
-            return;
-        }
-
-        try {
-            const result = await editBooking(booking._id, {
-                status: 'ĐÃ HỦY',
-            });
-            if (result.success) {
-                toast.success('Đã hủy đơn đặt phòng thành công!');
-            }
-        } catch (error) {
-            toast.error(error.message || 'Có lỗi xảy ra khi hủy đơn.');
-            console.error(error);
-        }
-    };
-
-    const handlePayment = async () => {
-        const expiredAt = dayjs().add(5, 'minute').unix();
-        const newPayment = {
-            id_booking: booking?.id_booking,
-            email: booking?.email,
-            amount: booking?.payment_amount || 0,
-            description: `${booking?._id}`,
-            returnUrl: `http://localhost:3000/bookRoom/${booking.id_booking}`,
-            cancelUrl: `http://localhost:3000/bookRoom/${booking.id_booking}`,
-            expiredAt,
-        };
-        try {
-            const result = await createPayment(newPayment); // gọi đến backend
-            if (result?.checkoutUrl) {
-                window.open(result.checkoutUrl, '_blank'); // chuyển tới trang thanh toán
-            } else {
-                alert('Không lấy được link thanh toán!');
-            }
-        } catch (error) {
-            console.error('Lỗi khi tạo đơn hàng:', error);
-            alert('Có lỗi xảy ra khi khởi tạo thanh toán!');
-        }
-    };
+    const { cancel, complete, pay } = useBookingActions(booking);
 
     return (
         <div className={style.container}>
@@ -104,7 +44,6 @@ const BookingManger = () => {
                         {roomsByBranch?.map((room) => {
                             // Kiểm tra room này có đang được đặt không
                             const bookingInfo = roomBooking?.find((item) => item.roomId === room._id);
-                            console.log('bookingInfo', bookingInfo);
                             const isBookedNow = !!bookingInfo;
 
                             return (
@@ -112,13 +51,12 @@ const BookingManger = () => {
                                     className={clsx(
                                         style.room,
                                         selectedRoom === room._id && style.active,
-                                        isBookedNow && style.booked // Thêm class nếu đang được đặt
+                                        isBookedNow && style.booked, // Thêm class nếu đang được đặt
                                     )}
                                     key={room._id}
                                     onClick={() => {
                                         setSelectedRoom(room._id);
                                         setSelectedBooking(bookingInfo?.bookingId || null);
-                                        console.log('selectedbooking: ', selectedBooking);
                                     }}
                                 >
                                     {room.name}
@@ -195,7 +133,7 @@ const BookingManger = () => {
                                 <div className={style.row}>
                                     {/* Ẩn nút Hủy nếu đã hoàn tất */}
                                     {booking?.status !== 'HOÀN THÀNH' && (
-                                        <Button rounded_10 red w_fit onClick={handleCancelBooking}>
+                                        <Button rounded_10 red w_fit onClick={cancel}>
                                             Hủy đơn
                                         </Button>
                                     )}
@@ -207,13 +145,18 @@ const BookingManger = () => {
                                                 Đã hoàn tất
                                             </Button>
                                         ) : (
-                                            <Button rounded_10 yellowLinear w_fit onClick={handleCompleteBooking}>
+                                            <Button rounded_10 yellowLinear w_fit onClick={complete}>
                                                 Hoàn tất
                                             </Button>
                                         )
                                     ) : (
                                         // Nếu chưa thanh toán
-                                        <Button rounded_10 yellowLinear w_fit onClick={handlePayment}>
+                                        <Button
+                                            rounded_10
+                                            yellowLinear
+                                            w_fit
+                                            onClick={() => pay('full', { newTab: true })}
+                                        >
                                             Thanh toán
                                         </Button>
                                     )}

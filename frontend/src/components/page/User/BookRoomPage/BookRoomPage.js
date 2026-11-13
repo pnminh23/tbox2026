@@ -4,16 +4,12 @@ import Tippy from "@tippyjs/react";
 import "tippy.js/dist/tippy.css";
 import "tippy.js/themes/light-border.css";
 import { PATH } from "@/constants/config";
-import {
-    AiOutlineCheckCircle,
-    AiOutlineCloseCircle,
-    AiOutlineWarning,
-} from "react-icons/ai";
+import { AiOutlineWarning } from "react-icons/ai";
 import Link from "next/link";
 import Button from "@/components/common/Button";
 import Input from "@/components/common/Input";
 import Selection from "@/components/common/Selection";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Calendar from "@/components/common/Calender";
 import clsx from "clsx";
 import Image from "next/image";
@@ -24,7 +20,7 @@ const DynamicLoadingFullPage = dynamic(
     {
         ssr: false, // Tùy chọn QUAN TRỌNG nhất
         loading: () => null, // Optional: có thể trả về null hoặc một div trống trong lúc chờ load
-    }
+    },
 );
 import Feedback from "@/components/common/Feedback";
 import { useBookingsRealtime } from "@/hooks/useBookingRealTime";
@@ -37,352 +33,221 @@ import { useAllBranches } from "@/services/branch";
 import { useAllCombo } from "@/services/combo";
 import { useAllTimeSlots } from "@/services/timeSlots";
 import { useUserData } from "@/services/account";
-import { createBooking, useBookingByOrderCode } from "@/services/booking";
+import { createBooking } from "@/services/booking";
 import { toast } from "react-toastify";
 import { useRouter } from "next/router";
 import { useAllFilms, useFilm } from "@/services/films";
-import { FilmIcon } from "lucide-react";
-import FilmItem from "@/components/common/ItemSlider/FilmItem";
 import Popup from "@/components/common/Popup/Popup";
 import SearchBar from "@/components/common/SearchBar";
 import { formatMoney } from "@/function/formatMoney";
-import { createPayment } from "@/services/payment";
+import useBookingActions from "@/hooks/useBookingActions";
+import { durationMinutes } from "@/function/duration";
+
+const MIN_MINUTES = 60;
+const PAYMENT_THRESHOLD = 150000; // đồng bộ với backend/src/services/booking.js
+const GRACE_MINUTES = 10; // cho đặt khung giờ vừa bắt đầu tối đa 10 phút
+
+const toOptions = (list = []) =>
+    list.map((item) => ({ name: item.name, id: item._id }));
 
 const BookRoomPage = () => {
+    const router = useRouter();
+    const { user } = useUserData();
+    const [guest, setGuest] = useState({ name: "", email: "", phone: "" });
     const [selectedDate, setSelectedDate] = useState(new Date());
-    const [selectedTypeRoom, setSelectedTypeRoom] = useState("");
-    const [selectedName, setSelectedName] = useState("");
-    const [selectedEmail, setSelectedEmail] = useState("");
-    const [selectedPhone, setSelectedPhone] = useState("");
     const [selectedBranch, setSelectedBranch] = useState("");
-    const [selectedCombo, setSelectedCombo] = useState("");
+    const [selectedTypeRoom, setSelectedTypeRoom] = useState("");
     const [selectedRoom, setSelectedRoom] = useState("");
     const [selectedTimeSlots, setSelectedTimeSlots] = useState([]);
+    const [selectedCombo, setSelectedCombo] = useState("");
     const [selectedDiscount, setSelectedDiscount] = useState("");
     const [selectedFilm, setSelectedFilm] = useState(null);
     const [booking, setBooking] = useState(null);
     const [loading, setLoading] = useState(false);
-    const bookedRoom = useBookingsRealtime(selectedRoom, selectedDate);
+    const [isPopupConfirm, setIsPopupConfirm] = useState(false);
+    const [contentConfirm, setContentConfirm] = useState("");
+    const [messageDeposit, setMessageDeposit] = useState("");
+
+    const day = dayjs(selectedDate).format("YYYY-MM-DD");
+    const bookedRoom = useBookingsRealtime(selectedRoom, day);
     const { typeRooms } = useTypeRoom();
     const { branches } = useAllBranches();
     const { allCombo } = useAllCombo();
-    const { timeSlots } = useAllTimeSlots();
-    const { user } = useUserData();
-    const router = useRouter();
-    const { f_Id } = router.query;
-
-    const [initialFilmId, setInitialFilmId] = useState(null);
-
-    useEffect(() => {
-        if (f_Id && !initialFilmId) {
-            setInitialFilmId(f_Id);
-        }
-    }, [f_Id, initialFilmId]);
-
-    // Ưu tiên selectedFilm, nếu không có thì lấy initialFilmId
-    const { film, isLoading: loadingFilm } = useFilm(
-        selectedFilm || initialFilmId
-    );
-    const { films, isLoadingAllFimls, isErrorAllFimls } = useAllFilms();
-    const FilmOptions = films?.map((film) => ({
-        name: `${film.name} - ${film.nameEnglish}`,
-        id: film._id,
-        image: film.image, // hoặc room.id nếu backend trả id thường
-    }));
-
-    const [isPopupConfirm, setIsPopupConfirm] = useState(false);
-    const [isPopupDeposit, setIsPopupDeposit] = useState(false);
-    const [messageDeposit, setMessageDeposit] = useState("");
-    const [halfPay, setHalfPay] = useState(0);
-    const [contentConfirm, setContentConfirm] = useState("");
-    const [confirmedOverDuration, setConfirmedOverDuration] = useState(false);
-    const disabledTimeSlots = bookedRoom?.bookedTimeSlots || [];
+    const { timeSlots = [] } = useAllTimeSlots();
+    const { films } = useAllFilms();
     const { RoomsByBranchAndType: rooms } = useRoomByBranchAndType(
         selectedBranch,
-        selectedTypeRoom
+        selectedTypeRoom,
     );
-    const TypeRoomOptions = typeRooms?.map((type) => ({
-        name: type.name,
-        id: type._id, // hoặc room.id nếu backend trả id thường
-    }));
-    const BranchOptions = branches?.map((branch) => ({
-        name: branch.name,
-        id: branch._id, // hoặc room.id nếu backend trả id thường
-    }));
-    const ComboOptions = allCombo?.map((combo) => ({
-        name: combo.name,
-        id: combo._id, // hoặc room.id nếu backend trả id thường
-    }));
+    const { pay } = useBookingActions(booking);
 
-    const handleSelectionBoxChange = (value) => {
-        setSelectedTypeRoom(value); // value là ID như 'id1' hoặc 'id2'
-    };
-    const handleSelectionBranchChange = (value) => {
-        setSelectedBranch(value); // value là ID như 'id1' hoặc 'id2'
+    const filmId = selectedFilm || router.query.f_Id;
+    const { film, isLoading: loadingFilm } = useFilm(filmId);
+    const filmMinutes = durationMinutes(film?.duration);
+    const room = rooms?.find((r) => r._id === selectedRoom);
+
+    const FilmOptions = films?.map((f) => ({
+        name: `${f.name} - ${f.nameEnglish}`,
+        id: f._id,
+        image: f.image,
+    }));
+    const TypeRoomOptions = toOptions(typeRooms);
+    const BranchOptions = toOptions(branches);
+    // Chỉ hiện combo áp dụng cho loại phòng đã chọn, kèm lựa chọn bỏ combo
+    const ComboOptions = [
+        { name: "Không dùng combo", id: "" },
+        ...toOptions(
+            allCombo?.filter((c) =>
+                c.types.some((t) => t.typeRoom?._id === selectedTypeRoom),
+            ),
+        ),
+    ];
+
+    const customer = {
+        name_client: user?.name || guest.name,
+        email: user?.email || guest.email,
+        phone: user?.phone || guest.phone,
     };
 
-    const handleSelectionComboChange = (value) => {
-        setSelectedCombo(value);
-    };
-    const handleSelectedRoom = (_id) => {
-        setSelectedRoom(_id);
-        setSelectedTimeSlots([]);
-    };
+    /* ---------- Khung giờ ---------- */
 
-    const handleTimeSlotClick = (timeSlotId) => {
-        const clickedIndex = timeSlots.findIndex(
-            (slot) => slot._id === timeSlotId
+    const bookedIds = new Set((bookedRoom?.bookedTimeSlots || []).map(String));
+    const isPast = (slot) => {
+        const [h, m] = slot.start_time.split(":").map(Number);
+        return dayjs(selectedDate)
+            .hour(h)
+            .minute(m)
+            .isBefore(dayjs().subtract(GRACE_MINUTES, "minute"));
+    };
+    const isUnavailable = (slot) => bookedIds.has(slot._id) || isPast(slot);
+
+    const selectedSlots = timeSlots.filter((slot) =>
+        selectedTimeSlots.includes(slot._id),
+    );
+    const totalMinutes = selectedSlots.reduce(
+        (sum, slot) => sum + (slot.slot_duration || 0),
+        0,
+    );
+
+    // Đổi ngày/cơ sở/loại phòng/phòng thì bỏ khung giờ đã chọn
+    const resetSlots = () => setSelectedTimeSlots([]);
+    const handleDateChange = (date) => (setSelectedDate(date), resetSlots());
+    const handleBranchChange = (id) => (
+        setSelectedBranch(id),
+        setSelectedRoom(""),
+        resetSlots()
+    );
+    const handleTypeRoomChange = (id) => (
+        setSelectedTypeRoom(id),
+        setSelectedRoom(""),
+        setSelectedCombo(""),
+        resetSlots()
+    );
+    const handleSelectedRoom = (id) => (setSelectedRoom(id), resetSlots());
+
+    // Chọn dải khung giờ liên tiếp [from, to]; trả null nếu có khung không dùng được
+    const rangeIds = (from, to) => {
+        const range = timeSlots.slice(
+            Math.min(from, to),
+            Math.max(from, to) + 1,
         );
-        if (clickedIndex === -1) return;
-
-        // Nếu danh sách rỗng, chọn khung giờ đầu tiên và tự động chọn các khung tiếp theo
-        if (selectedTimeSlots.length === 0 && film?.duration) {
-            let totalDuration = 0;
-            let newSelectedTimeSlots = [timeSlotId];
-            const clickedSlot = timeSlots[clickedIndex];
-            totalDuration += clickedSlot.slot_duration || 0;
-
-            // Tự động chọn các khung giờ tiếp theo cho đến khi đủ thời lượng phim
-            for (let i = clickedIndex + 1; i < timeSlots.length; i++) {
-                const nextSlot = timeSlots[i];
-                const isDisabled = disabledTimeSlots.includes(nextSlot._id);
-
-                // Kiểm tra nếu khung giờ đã qua
-                const now = dayjs().subtract(10, "minute");
-                const isToday = dayjs(selectedDate).isSame(now, "day");
-                const slotStart = dayjs(selectedDate)
-                    .hour(Number(nextSlot.start_time.split(":")[0]))
-                    .minute(Number(nextSlot.start_time.split(":")[1]));
-                const isPast = isToday && slotStart.isBefore(now);
-
-                if (isDisabled || isPast) {
-                    toast.error(
-                        "Không thể chọn khung giờ này vì đã được đặt hoặc đã qua."
-                    );
-                    setSelectedTimeSlots([]);
-                    return;
-                }
-
-                if (totalDuration < film.duration) {
-                    newSelectedTimeSlots.push(nextSlot._id);
-                    totalDuration += nextSlot.slot_duration || 0;
-                } else {
-                    break;
-                }
-            }
-
-            // Kiểm tra nếu tổng thời lượng không đủ
-            if (totalDuration < film.duration) {
-                toast.error(
-                    `Không đủ khung giờ liên tiếp để đáp ứng thời lượng phim (${film.duration} phút). Vui lòng chọn khung giờ khác.`
-                );
-                setSelectedTimeSlots([]);
-                return;
-            }
-
-            setSelectedTimeSlots(newSelectedTimeSlots);
-        } else if (selectedTimeSlots.length > 0) {
-            // Nếu đã có khung giờ được chọn, chọn tất cả từ khung đầu tiên đến khung được click
-            const firstSelectedIndex = timeSlots.findIndex(
-                (slot) => slot._id === selectedTimeSlots[0]
-            );
-            const startIndex = Math.min(firstSelectedIndex, clickedIndex);
-            const endIndex = Math.max(firstSelectedIndex, clickedIndex);
-
-            let newSelectedTimeSlots = [];
-            let isValid = true;
-
-            // Chọn tất cả các khung giờ từ startIndex đến endIndex
-            for (let i = startIndex; i <= endIndex; i++) {
-                const slot = timeSlots[i];
-                const isDisabled = disabledTimeSlots.includes(slot._id);
-
-                // Kiểm tra nếu khung giờ đã qua
-                const now = dayjs().subtract(10, "minute");
-                const isToday = dayjs(selectedDate).isSame(now, "day");
-                const slotStart = dayjs(selectedDate)
-                    .hour(Number(slot.start_time.split(":")[0]))
-                    .minute(Number(slot.start_time.split(":")[1]));
-                const isPast = isToday && slotStart.isBefore(now);
-
-                if (isDisabled || isPast) {
-                    isValid = false;
-                    break;
-                }
-                newSelectedTimeSlots.push(slot._id);
-            }
-
-            if (!isValid) {
-                toast.error(
-                    "Không thể chọn khung giờ này vì có khung giờ đã được đặt hoặc đã qua."
-                );
-                return;
-            }
-
-            setSelectedTimeSlots(newSelectedTimeSlots);
-        }
+        return range.some(isUnavailable) ? null : range.map((slot) => slot._id);
     };
+
+    const handleTimeSlotClick = (slotId) => {
+        const clicked = timeSlots.findIndex((slot) => slot._id === slotId);
+        if (clicked === -1) return;
+
+        // Đã có khung đầu: chọn từ khung đầu tới khung vừa bấm
+        if (selectedTimeSlots.length) {
+            const first = timeSlots.findIndex(
+                (slot) => slot._id === selectedTimeSlots[0],
+            );
+            const ids = rangeIds(first, clicked);
+            return ids
+                ? setSelectedTimeSlots(ids)
+                : toast.error(
+                      "Khoảng giờ này có khung đã được đặt hoặc đã qua.",
+                  );
+        }
+
+        // Lần đầu: tự chọn đủ thời lượng phim (tối thiểu 60 phút)
+        const need = Math.max(filmMinutes, MIN_MINUTES);
+        let end = clicked;
+        let minutes = timeSlots[clicked].slot_duration;
+        while (minutes < need && end + 1 < timeSlots.length)
+            minutes += timeSlots[++end].slot_duration;
+
+        const ids = minutes >= need && rangeIds(clicked, end);
+        if (!ids)
+            return toast.error(
+                `Không đủ ${need} phút trống liên tiếp từ khung giờ này.`,
+            );
+        setSelectedTimeSlots(ids);
+    };
+
+    /* ---------- Giá tạm tính (chưa gồm mã giảm giá; server tính lại khi đặt) ---------- */
+
+    const combo = allCombo?.find((c) => c._id === selectedCombo);
+    const estimate = !room
+        ? 0
+        : combo
+          ? combo.types.find((t) => t.typeRoom?._id === room.type?._id)
+                ?.price || 0
+          : (room.type?.base_price_per_minute || 0) * totalMinutes;
+
+    /* ---------- Đặt phòng ---------- */
 
     const validate = () => {
-        if (!selectedFilm && !initialFilmId) return "Vui lòng chọn phim";
+        if (!filmId) return "Vui lòng chọn phim";
         if (!selectedBranch) return "Vui lòng chọn cơ sở";
         if (!selectedTypeRoom) return "Vui lòng chọn loại phòng";
         if (!selectedRoom) return "Vui lòng chọn phòng";
-        if (!selectedName && !user?.name) return "Vui lòng cung cấp họ và tên";
-        if (!selectedEmail && !user?.email) return "Vui lòng cung cấp email";
-        if (!selectedPhone && !user?.phone)
-            return "Vui lòng cung cấp số điện thoại";
-        if (!selectedTimeSlots || selectedTimeSlots.length === 0)
-            return "Vui lòng chọn khung giờ";
+        if (!customer.name_client) return "Vui lòng cung cấp họ và tên";
+        if (!customer.email) return "Vui lòng cung cấp email";
+        if (!customer.phone) return "Vui lòng cung cấp số điện thoại";
+        if (!selectedTimeSlots.length) return "Vui lòng chọn khung giờ";
+        if (totalMinutes < MIN_MINUTES)
+            return `Đặt phòng tối thiểu ${MIN_MINUTES} phút`;
         return "";
     };
     const errorMessage = validate();
 
-    const handleBooking = async () => {
-        const selectedSlotDetails = timeSlots.filter((slot) =>
-            selectedTimeSlots.includes(slot._id)
-        );
-        const totalSlotDuration = selectedSlotDetails.reduce(
-            (acc, slot) => acc + (slot.slot_duration || 0),
-            0
-        );
-        if (totalSlotDuration === 30) {
-            toast.error("Đặt phòng tối thiểu 60 phút");
-            return;
-        }
-        // console.log('selectedSlotDetails', selectedSlotDetails);
-        // console.log('totalSlotDuration', totalSlotDuration);
-        if (
-            !confirmedOverDuration &&
-            Math.abs(totalSlotDuration - film.duration) > 30
-        ) {
+    const handleBooking = () => {
+        if (errorMessage) return toast.error(errorMessage);
+        if (filmMinutes && Math.abs(totalMinutes - filmMinutes) > 30) {
             setContentConfirm(
-                `Phim bạn chọn có thời lượng ${film.duration} phút nhưng bạn đang đặt phòng với thời gian ${totalSlotDuration} phút. Bạn có chắc muốn tiếp tục đặt?`
+                `Phim bạn chọn dài ${filmMinutes} phút nhưng bạn đang đặt ${totalMinutes} phút. Bạn có chắc muốn tiếp tục?`,
             );
-            setIsPopupConfirm(true);
-            return;
+            return setIsPopupConfirm(true);
         }
-
-        await handleBookingFinal();
+        handleBookingFinal();
     };
+
     const handleBookingFinal = async () => {
         setIsPopupConfirm(false);
-        setConfirmedOverDuration(false); // reset lại sau khi đặt
         setLoading(true);
-        const newBooking = {
-            name_client: user?.name || selectedName,
-            email: user?.email || selectedEmail,
+        const result = await createBooking({
+            ...customer,
             film: film?._id,
-            phone: user?.phone || selectedPhone,
             room: selectedRoom,
-            date: selectedDate,
+            date: day,
             combo: selectedCombo,
             time_slots: selectedTimeSlots,
-            promotion: selectedDiscount,
-        };
-        console.log("new booking: ", newBooking);
+            promotion: selectedDiscount.trim(),
+        });
+        setLoading(false);
 
-        try {
-            const result = await createBooking(newBooking);
-            console.log("result: ", result);
-            if (result.success) {
-                const newBookingData = result.data.data;
-                setBooking(newBookingData);
-                if (result.data.paymentRequired) {
-                    setIsPopupDeposit(true);
-                    setMessageDeposit(result.message);
-                    setHalfPay(result.data.money);
-                } else {
-                    toast.success(result.message);
-                    router.push(`/bookRoom/${newBookingData.id_booking}`);
-                    setSelectedTimeSlots([]);
+        if (!result.success) return toast.error(result.message);
+        const newBooking = result.data.data;
+        setBooking(newBooking);
+        resetSlots();
 
-                    // console.log('result data:', booking);
-                }
-                console.log("result booking: ", result);
-            } else {
-                toast.error(result.message);
-            }
-        } catch (error) {
-            toast.error("Có lỗi xảy ra khi đặt phòng.");
-            // console.error(error);
-        } finally {
-            setLoading(false); // Kết thúc loading
-        }
+        if (result.data.paymentRequired)
+            return setMessageDeposit(result.message);
+        toast.success(result.message);
+        router.push(`/bookRoom/${newBooking.id_booking}`);
     };
-
-    const handlePayment = async () => {
-        const expiredAt = dayjs().add(5, "minute").unix();
-        const newPayment = {
-            id_booking: booking?.id_booking,
-            email: selectedEmail || user.email,
-            amount: booking?.payment_amount || 0,
-            description: `${booking?.id_booking}`,
-            returnUrl: `http://localhost:3000/bookRoom/${booking.id_booking}`,
-            cancelUrl: `http://localhost:3000/bookRoom/${booking.id_booking}`,
-            expiredAt,
-        };
-
-        try {
-            const result = await createPayment(newPayment); // gọi đến backend
-            // console.log('result: ', result);
-            if (result?.checkoutUrl) {
-                window.location.href = result.checkoutUrl; // chuyển tới trang thanh toán
-            } else {
-                alert("Không lấy được link thanh toán!");
-            }
-        } catch (error) {
-            console.error("Lỗi khi tạo đơn hàng:", error);
-            alert("Có lỗi xảy ra khi khởi tạo thanh toán!");
-        }
-    };
-    const handleHalfPayment = async () => {
-        const expiredAt = dayjs().add(5, "minute").unix();
-        const description = `${booking?._id}`;
-        const newPayment = {
-            id_booking: booking?.id_booking,
-            amount: halfPay || 0,
-            description: description,
-            returnUrl: `http://localhost:3000/bookRoom/${booking.id_booking}`,
-            cancelUrl: `http://localhost:3000/bookRoom/${booking.id_booking}`,
-            expiredAt,
-        };
-        // console.log('newPayment: ', newPayment);
-        try {
-            const result = await createPayment(newPayment);
-
-            if (result?.checkoutUrl) {
-                window.location.href = result.checkoutUrl; // chuyển tới trang thanh toán
-            } else {
-                alert("Không lấy được link thanh toán!");
-            }
-        } catch (error) {
-            console.error("Lỗi khi tạo đơn hàng:", error);
-            alert("Có lỗi xảy ra khi khởi tạo thanh toán!");
-        }
-    };
-
-    // console.log('name_client', user?.name);
-    // console.log('email', user?.email);
-    // console.log('phone', user?.phone);
-    // console.log('room', selectedRoom);
-    // console.log('date', selectedDate);
-    // console.log('combo', selectedCombo);
-    // console.log('timeSlots', selectedTimeSlots);
-    // console.log('selectedDiscount', selectedDiscount);
-    // console.log('bookedRoom', bookedRoom);
-
-    const isBookingDisabled = !(
-        (selectedName || user?.name) &&
-        (selectedEmail || user?.email) &&
-        (selectedPhone || user?.phone) &&
-        selectedBranch &&
-        selectedTypeRoom &&
-        selectedRoom &&
-        selectedDate &&
-        (selectedFilm || initialFilmId) &&
-        selectedTimeSlots.length > 0
-    );
 
     return (
         <div className="container">
@@ -417,11 +282,8 @@ const BookRoomPage = () => {
                     </div>
                 </Popup>
             )}
-            {isPopupDeposit && (
-                <Popup
-                    handleClose={() => {
-                        setIsPopupDeposit(false);
-                    }}>
+            {messageDeposit && (
+                <Popup handleClose={() => setMessageDeposit("")}>
                     <div className={style.formConfirm}>
                         <p className={style.titleConfirm}>Yêu cầu cọc trước</p>
                         <p className={style.contentConfirm}>{messageDeposit}</p>
@@ -430,14 +292,14 @@ const BookRoomPage = () => {
                                 type={"button"}
                                 rounded_10
                                 red
-                                onClick={handleHalfPayment}>
+                                onClick={() => pay("deposit")}>
                                 Thanh toán 50%
                             </Button>
                             <Button
                                 type={"button"}
                                 rounded_10
                                 yellowLinear
-                                onClick={handlePayment}>
+                                onClick={() => pay("full")}>
                                 Thanh toán 100%
                             </Button>
                         </div>
@@ -473,9 +335,12 @@ const BookRoomPage = () => {
                                     color_black
                                     placeholder={"Họ và tên"}
                                     onChange={(e) =>
-                                        setSelectedName(e.target.value)
+                                        setGuest((g) => ({
+                                            ...g,
+                                            name: e.target.value,
+                                        }))
                                     }
-                                    value={selectedName}
+                                    value={guest.name}
                                 />
 
                                 <Input
@@ -483,9 +348,12 @@ const BookRoomPage = () => {
                                     color_black
                                     placeholder="Email"
                                     onChange={(e) =>
-                                        setSelectedEmail(e.target.value)
+                                        setGuest((g) => ({
+                                            ...g,
+                                            email: e.target.value,
+                                        }))
                                     }
-                                    value={selectedEmail}
+                                    value={guest.email}
                                 />
 
                                 <Input
@@ -493,9 +361,12 @@ const BookRoomPage = () => {
                                     color_black
                                     placeholder="Số điện thoại"
                                     onChange={(e) =>
-                                        setSelectedPhone(e.target.value)
+                                        setGuest((g) => ({
+                                            ...g,
+                                            phone: e.target.value,
+                                        }))
                                     }
-                                    value={selectedPhone}
+                                    value={guest.phone}
                                 />
                             </div>
                         </>
@@ -509,7 +380,6 @@ const BookRoomPage = () => {
                             <SearchBar
                                 data={FilmOptions}
                                 onSelect={(item) => {
-                                    // console.log('item', item);
                                     setSelectedFilm(item.id);
                                 }}
                                 heightImage={70}
@@ -575,7 +445,7 @@ const BookRoomPage = () => {
                                                                 }>
                                                                 {item}
                                                             </div>
-                                                        )
+                                                        ),
                                                     )}
                                                 </div>
                                             </div>
@@ -584,7 +454,7 @@ const BookRoomPage = () => {
                                 )
                             )}
                         </div>
-                        {(film || initialFilmId) && (
+                        {filmId && (
                             <div className={style.groupItems}>
                                 <p>Chọn cơ sở bạn muốn đến</p>
                                 <Selection
@@ -592,7 +462,7 @@ const BookRoomPage = () => {
                                     optionLabel="name"
                                     defaultValue={selectedBranch}
                                     optionValue="id"
-                                    onChange={handleSelectionBranchChange}
+                                    onChange={handleBranchChange}
                                 />
                             </div>
                         )}
@@ -604,7 +474,7 @@ const BookRoomPage = () => {
 
                                     <Calendar
                                         selectedDate={selectedDate}
-                                        onChange={setSelectedDate}
+                                        onChange={handleDateChange}
                                         currentDay
                                         disablePastDates
                                     />
@@ -617,7 +487,7 @@ const BookRoomPage = () => {
                                         defaultValue={selectedTypeRoom}
                                         optionLabel="name"
                                         optionValue="id"
-                                        onChange={handleSelectionBoxChange}
+                                        onChange={handleTypeRoomChange}
                                     />
                                 </div>
                             </div>
@@ -631,7 +501,7 @@ const BookRoomPage = () => {
                                                 style.room,
                                                 selectedRoom === room._id
                                                     ? style.active
-                                                    : ""
+                                                    : "",
                                             )}
                                             key={room._id}
                                             onClick={() =>
@@ -651,37 +521,9 @@ const BookRoomPage = () => {
                             )}
                             {selectedRoom && (
                                 <div className={style.timeFrame}>
-                                    {timeSlots?.map((time) => {
-                                        const now = dayjs().subtract(
-                                            10,
-                                            "minute"
-                                        ); // thời điểm hiện tại
-                                        const isToday = dayjs(
-                                            selectedDate
-                                        ).isSame(now, "day"); // kiểm tra có phải hôm nay không
-
-                                        const todayStart = dayjs(selectedDate)
-                                            .hour(
-                                                Number(
-                                                    time.start_time.split(
-                                                        ":"
-                                                    )[0]
-                                                )
-                                            )
-                                            .minute(
-                                                Number(
-                                                    time.start_time.split(
-                                                        ":"
-                                                    )[1]
-                                                )
-                                            );
-
-                                        const isPast =
-                                            isToday && todayStart.isBefore(now); // chỉ disable nếu là hôm nay và đã qua
-                                        const isDisabled =
-                                            disabledTimeSlots.includes(
-                                                time._id
-                                            ) || isPast;
+                                    {timeSlots.map((time) => {
+                                        const past = isPast(time);
+                                        const isDisabled = isUnavailable(time);
 
                                         const slotContent = (
                                             <div
@@ -689,14 +531,14 @@ const BookRoomPage = () => {
                                                 className={clsx(
                                                     style.slot,
                                                     selectedTimeSlots.includes(
-                                                        time._id
+                                                        time._id,
                                                     ) && style.activeSlot,
-                                                    isDisabled && style.disable
+                                                    isDisabled && style.disable,
                                                 )}
                                                 onClick={() => {
                                                     if (!isDisabled)
                                                         handleTimeSlotClick(
-                                                            time._id
+                                                            time._id,
                                                         );
                                                 }}>
                                                 {`${time.start_time} - ${time.end_time}`}
@@ -706,7 +548,7 @@ const BookRoomPage = () => {
                                         return isDisabled ? (
                                             <Tippy
                                                 content={
-                                                    isPast
+                                                    past
                                                         ? "Khung giờ đã qua"
                                                         : "Khung giờ này đã được đặt"
                                                 }
@@ -730,7 +572,8 @@ const BookRoomPage = () => {
 
                                     <Selection
                                         options={ComboOptions}
-                                        onChange={handleSelectionComboChange}
+                                        defaultValue={selectedCombo}
+                                        onChange={setSelectedCombo}
                                     />
                                 </div>
                                 <div className={style.groupItems}>
@@ -746,16 +589,32 @@ const BookRoomPage = () => {
                             </div>
                         )}
 
+                        {estimate > 0 && (
+                            <div className={style.groupItems}>
+                                <p>
+                                    {`Tạm tính: ${formatMoney(estimate)} (${totalMinutes} phút${
+                                        selectedDiscount
+                                            ? ", chưa trừ mã giảm giá"
+                                            : ""
+                                    })`}
+                                </p>
+                                {estimate > PAYMENT_THRESHOLD && (
+                                    <p>{`Cần cọc tối thiểu ${formatMoney(Math.ceil(estimate / 2))} để giữ chỗ`}</p>
+                                )}
+                            </div>
+                        )}
+
                         <Tippy
                             content={errorMessage}
                             placement="bottom"
-                            theme="light">
+                            theme="light"
+                            disabled={!errorMessage}>
                             <div className={style.groupItems}>
                                 <Button
                                     rounded_10
                                     redLinear
                                     onClick={handleBooking}
-                                    disabled={isBookingDisabled}>
+                                    disabled={!!errorMessage}>
                                     Đặt phòng
                                 </Button>
                             </div>
@@ -766,8 +625,8 @@ const BookRoomPage = () => {
                                 <h5>Lưu ý</h5>
                             </div>
                             <p>
-                                - Các đơn đặt phòng từ 150.000 VNĐ trở lên vui
-                                lòng thanh toán trước 50% giá trị hóa đơn
+                                - Các đơn đặt phòng trên 150.000 VNĐ vui lòng
+                                thanh toán trước 50% giá trị hóa đơn
                             </p>
                             <p>
                                 - Những tài khoản đặt phòng nhưng không đến và

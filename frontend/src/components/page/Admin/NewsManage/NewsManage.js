@@ -26,7 +26,7 @@ import dynamic from "next/dynamic";
 // Thay thế bằng:
 const DynamicLoadingItem = dynamic(
     () => import("@/components/common/LoadingItem/LoadingItem"),
-    { ssr: false }
+    { ssr: false },
 );
 
 const DynamicLoadingFullPage = dynamic(
@@ -34,7 +34,7 @@ const DynamicLoadingFullPage = dynamic(
     {
         ssr: false, // Tùy chọn QUAN TRỌNG nhất
         loading: () => null, // Optional: có thể trả về null hoặc một div trống trong lúc chờ load
-    }
+    },
 );
 
 const NewsManage = () => {
@@ -74,7 +74,6 @@ const NewsManage = () => {
     useEffect(() => {
         // Chỉ cập nhật editNews nếu 'news' đã có và khớp với 'selectedNewsId'
         if (news && news._id === selectedNewsId) {
-            // console.log("useEffect [news, selectedNewsId]: Populating editNews with content:", news.content);
             setEditNews({
                 title: news.title || "",
                 content: news.content || "", // Đây là nội dung từ API
@@ -94,7 +93,6 @@ const NewsManage = () => {
             ...prevEditNews,
             content: newContentFromEditor,
         }));
-        // console.log('RichText content updated in editNews.content:', newContentFromEditor);
     };
 
     const handleCreate = async () => {
@@ -107,7 +105,6 @@ const NewsManage = () => {
             if (editFile) formData.append("image", editFile);
 
             const response = await createNews(formData);
-            console.log("response: ", response);
             if (response.success) {
                 toast.success("Thêm tin mới thành công!");
                 setIsPopupCreate(false);

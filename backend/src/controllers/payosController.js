@@ -1,114 +1,96 @@
-import dayjs from 'dayjs';
 import payos from '../config/payos.js';
-import bookingModel from '../models/bookingModel.js';
+import { CLIENT_URL } from '../config/env.js';
+import { sendMailSafe } from '../config/nodemailer.js';
+import bookingModel, { BOOKING_STATUS, PAY_STATUS } from '../models/bookingModel.js';
+import { HOLD_MINUTES, depositOf, findBooking, isClosed, lockSlots } from '../services/booking.js';
+import { bookingMail } from '../services/generateEmail.js';
+import { notifyBooking } from './bookingController.js';
+import { asyncHandler, fail } from '../utils/http.js';
+import dayjs from '../utils/time.js';
 
-function generateOrderCode() {
-    const randomPart = Math.floor(100 + Math.random() * 900); // 3 số ngẫu nhiên
-    const timePart = Date.now() % 1000; // 3 số cuối của timestamp
-    return Number(`${randomPart}${String(timePart).padStart(3, '0')}`);
-}
+const PAYOS_TEST_ORDER = 123;
 
-export const createOrder = async (req, res) => {
+// 13 chữ số: 10 số cuối timestamp + 3 số ngẫu nhiên → gần như không trùng
+const newOrderCode = () =>
+    Number(
+        `${String(Date.now()).slice(-10)}${Math.floor(Math.random() * 1000)
+            .toString()
+            .padStart(3, '0')}`,
+    );
+
+// Số tiền do server quyết định: cọc 50% (lần đầu) hoặc toàn bộ phần còn lại
+const amountFor = (booking, type) =>
+    type === 'deposit' && booking.isPay === PAY_STATUS.NONE ? depositOf(booking.total_money) : booking.payment_amount;
+
+export const createOrder = asyncHandler(async (req, res) => {
+    const { id_booking, type = 'full' } = req.body;
+    const booking = await bookingModel.findOne({ id_booking });
+    if (!booking) fail(404, 'Không tìm thấy đơn đặt phòng');
+    if (isClosed(booking.status) || booking.payment_amount <= 0) fail(400, 'Đơn này không cần thanh toán');
+
+    // Đơn chờ thanh toán chỉ được trả trong thời gian giữ chỗ
+    const expiresAt =
+        booking.status === BOOKING_STATUS.PENDING
+            ? dayjs(booking.createdAt).add(HOLD_MINUTES, 'minute')
+            : dayjs().add(HOLD_MINUTES, 'minute');
+    if (expiresAt.isBefore(dayjs().add(1, 'minute'))) fail(400, 'Đơn đã hết thời gian giữ chỗ');
+
+    booking.orderCode = newOrderCode();
+    await booking.save();
+
+    const returnUrl = `${CLIENT_URL}/bookRoom/${booking.id_booking}`;
+    const link = await payos.createPaymentLink({
+        orderCode: booking.orderCode,
+        amount: amountFor(booking, type),
+        description: `BOX ${booking.id_booking}`, // PayOS giới hạn 25 ký tự
+        returnUrl,
+        cancelUrl: returnUrl,
+        expiredAt: expiresAt.unix(),
+    });
+    res.json({ success: true, checkoutUrl: link.checkoutUrl });
+});
+
+// Webhook PayOS luôn trả 200 khi đã xác thực, tránh PayOS gửi lại
+export const handleWebhook = asyncHandler(async (req, res) => {
+    let data;
     try {
-        const { id_booking, email, amount, description, returnUrl, cancelUrl } = req.body;
-        const expiredAt = dayjs().add(5, 'minute').unix();
-
-        console.log('return url: ', returnUrl);
-        console.log('cancle url: ', cancelUrl);
-
-        if (!id_booking) {
-            return res.status(400).json({ success: false, message: 'Vui lòng cung cấp id_booking' });
-        }
-
-        const booking = await bookingModel.findOne({ id_booking });
-        if (!booking) {
-            return res.status(404).json({ success: false, message: 'Không tìm thấy booking' });
-        }
-
-        const { room, time_slots, date } = booking;
-        if (!room || !time_slots || !date) {
-            return res.status(400).json({ success: false, message: 'Thiếu thông tin phòng, thời gian hoặc ngày' });
-        }
-
-        const startOfDay = new Date(date);
-        startOfDay.setHours(0, 0, 0, 0);
-        const endOfDay = new Date(date);
-        endOfDay.setHours(23, 59, 59, 999);
-
-        const existingBooking = await bookingModel.findOne({
-            room: room,
-            time_slots: { $in: time_slots },
-            status: { $in: ['THÀNH CÔNG', 'HOÀN THÀNH'] },
-            date: { $gte: startOfDay, $lte: endOfDay },
-        });
-
-        if (existingBooking && existingBooking.email !== email) {
-            return res.status(400).json({ success: false, message: 'Khung giờ này đã có người đặt!' });
-        }
-
-        const orderCode = generateOrderCode();
-        await bookingModel.findOneAndUpdate({ id_booking }, { orderCode }, { new: true });
-
-        const paymentLink = await payos.createPaymentLink({
-            orderCode,
-            amount,
-            description,
-            returnUrl,
-            cancelUrl,
-            expiredAt,
-        });
-
-        return res.status(200).json(paymentLink);
-    } catch (error) {
-        console.error('Lỗi tạo order:', error);
-        res.status(500).json({ error: error.message });
+        data = payos.verifyPaymentWebhookData(req.body);
+    } catch {
+        return res.status(400).json({ success: false, message: 'Webhook không hợp lệ' });
     }
-};
 
-export const handleWebhook = async (req, res) => {
-    try {
-        const webhookData = req.body;
-        console.log(webhookData);
+    const { orderCode, amount } = data;
+    if (orderCode === PAYOS_TEST_ORDER) return res.json({ success: true });
 
-        const isValid = payos.verifyPaymentWebhookData(webhookData);
+    const booking = await findBooking({ orderCode });
+    // Bỏ qua đơn không tồn tại hoặc webhook lặp lại
+    if (!booking || booking.payments.some((p) => p.orderCode === orderCode)) return res.json({ success: true });
 
-        if (!isValid) {
-            return res.status(400).send('Invalid webhook data');
+    booking.payments.push({ orderCode, amount, paidAt: new Date() });
+    booking.payment_amount = Math.max(0, booking.payment_amount - amount);
+    booking.isPay = booking.payment_amount === 0 ? PAY_STATUS.FULL : PAY_STATUS.HALF;
+
+    if (booking.status === BOOKING_STATUS.PENDING) booking.status = BOOKING_STATUS.SUCCESS;
+    else if (isClosed(booking.status)) {
+        // Tiền về sau khi đơn hết hạn: giữ lại chỗ nếu còn trống, ngược lại đánh dấu cần hoàn tiền
+        try {
+            await lockSlots(booking);
+            booking.status = BOOKING_STATUS.SUCCESS;
+        } catch {
+            booking.refundRequired = true;
         }
-
-        const { orderCode, amount } = webhookData.data;
-
-        // Bỏ qua webhook test
-        if (orderCode === 123) {
-            console.log('Bỏ qua webhook test của PayOS');
-            return res.sendStatus(200);
-        }
-
-        const booking = await bookingModel.findOne({ orderCode });
-
-        if (!booking) {
-            console.log(`Không tìm thấy đơn hàng với orderCode: ${orderCode}`);
-            return res.status(404).json({ message: 'Booking not found' });
-        }
-
-        let updateData = {};
-
-        if (amount === booking.payment_amount) {
-            updateData.isPay = 'ĐÃ THANH TOÁN';
-            updateData.status = 'THÀNH CÔNG';
-            updateData.payment_amount = booking.total_money - amount;
-        } else if (amount === booking.total_money / 2) {
-            updateData.isPay = 'ĐÃ THANH TOÁN 50%';
-            updateData.status = 'THÀNH CÔNG';
-            updateData.payment_amount = booking.total_money - amount;
-        } else {
-            return res.status(400).json({ message: 'Amount does not match any valid payment status' });
-        }
-
-        const updatedBooking = await bookingModel.findByIdAndUpdate(booking._id, updateData, { new: true });
-
-        return res.status(200).json({ message: 'Webhook processed successfully', booking: updatedBooking });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
     }
-};
+    await booking.save();
+
+    notifyBooking(req, booking);
+    sendMailSafe(
+        bookingMail({
+            title: 'Thanh toán thành công',
+            message: booking.refundRequired
+                ? 'Chúng tôi đã nhận thanh toán nhưng khung giờ không còn trống. PNM - BOX sẽ liên hệ hoàn tiền cho bạn.'
+                : `Chúng tôi đã nhận ${amount.toLocaleString('vi-VN')}đ. Thông tin đơn của bạn:`,
+            booking,
+        }),
+    );
+    res.json({ success: true });
+});

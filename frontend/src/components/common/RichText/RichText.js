@@ -172,7 +172,6 @@ const RichText = ({ initialContent, onChange, contentClass }) => {
     // Chỉ cập nhật nếu nội dung từ prop thực sự khác với nội dung hiện tại của editor
     // Điều này tránh việc cập nhật không cần thiết có thể làm mất vị trí con trỏ.
     if (newContent !== currentEditorHTML) {
-      // console.log("RichText useEffect: initialContent thay đổi. Đang cập nhật editor.");
       // Tham số `false` ngăn việc phát sự kiện 'update',
       // vì thay đổi này đến từ prop, không phải từ người dùng nhập.
       editor.commands.setContent(newContent, false);

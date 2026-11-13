@@ -5,7 +5,6 @@ import filmModel from '../models/filmModel.js';
 import roomModel from '../models/roomModel.js';
 import roomTypeModel from '../models/roomTypeModel.js';
 import timeSlotModel from '../models/timeSlotModel.js';
-import mongoose from 'mongoose';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc.js';
 import timezone from 'dayjs/plugin/timezone.js';
@@ -17,8 +16,9 @@ dayjs.extend(timezone);
 dayjs.extend(isSameOrBefore);
 dayjs.extend(isBetween);
 
-// *** BỘ NHỚ NGỮ CẢNH: Lưu trữ thông tin cho mỗi người dùng ***
-const userSessions = {};
+// Ngữ cảnh hội thoại theo từng kết nối socket
+const sessions = new Map();
+export const clearChatSession = (sessionId) => sessions.delete(sessionId);
 const VIETNAM_TIMEZONE = 'Asia/Ho_Chi_Minh';
 
 const normalizeText = (text = '') => {
@@ -93,7 +93,8 @@ async function extractEntities(message, availableBranches, availableRoomTypes) {
     } else if (normalizedMessage.includes('phim')) {
         extracted.intent = 'get_film_list';
     } else if (
-        (normalizedMessage.includes('phong') && (normalizedMessage.includes('trong') || normalizedMessage.includes('con'))) ||
+        (normalizedMessage.includes('phong') &&
+            (normalizedMessage.includes('trong') || normalizedMessage.includes('con'))) ||
         normalizedMessage.includes('khung gio trong') ||
         normalizedMessage.includes('the ngay mai') // Nhận diện câu hỏi nối tiếp
     ) {
@@ -117,7 +118,7 @@ async function extractEntities(message, availableBranches, availableRoomTypes) {
     if (roomMatch && roomMatch[1]) {
         extracted.roomName = roomMatch[1];
     }
-    
+
     let foundBranch = null;
     const sortedBranches = [...availableBranches].sort((a, b) => b.name.length - a.name.length);
     for (const branch of sortedBranches) {
@@ -133,9 +134,12 @@ async function extractEntities(message, availableBranches, availableRoomTypes) {
     if (foundBranch) {
         extracted.branchName = foundBranch.name;
     }
-    
+
     for (const roomType of availableRoomTypes) {
-        const roomTypeRegex = new RegExp(`\\b${normalizeText(roomType.name).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+        const roomTypeRegex = new RegExp(
+            `\\b${normalizeText(roomType.name).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`,
+            'i',
+        );
         if (roomTypeRegex.test(normalizedMessage)) {
             extracted.roomTypeName = roomType.name;
             break;
@@ -148,7 +152,9 @@ async function extractEntities(message, availableBranches, availableRoomTypes) {
     const rangeMatch = normalizedMessage.match(rangeRegex);
     const untilMatch = normalizedMessage.match(untilRegex);
     if (rangeMatch) {
-        extracted.startTime = fromNowRegex.test(rangeMatch[1]) ? nowInVietnam.format('HH:mm') : parseTimeFromMessage(rangeMatch[1]);
+        extracted.startTime = fromNowRegex.test(rangeMatch[1])
+            ? nowInVietnam.format('HH:mm')
+            : parseTimeFromMessage(rangeMatch[1]);
         extracted.endTime = parseTimeFromMessage(rangeMatch[2]);
     } else if (untilMatch) {
         if (fromNowRegex.test(normalizedMessage)) {
@@ -201,16 +207,20 @@ async function findAvailableSlotsForRoom({ roomId, date }) {
         status: { $nin: ['ĐÃ HỦY', 'THẤT BẠI'] },
     });
     const bookedSlotIds = new Set();
-    bookingsForRoom.forEach(booking => {
-        booking.time_slots.forEach(slotId => bookedSlotIds.add(slotId.toString()));
+    bookingsForRoom.forEach((booking) => {
+        booking.time_slots.forEach((slotId) => bookedSlotIds.add(slotId.toString()));
     });
     const nowInVietnam = dayjs().tz(VIETNAM_TIMEZONE);
     const isToday = dayjs(date).isSame(nowInVietnam, 'day');
-    const availableSlots = allTimeSlots.filter(slot => {
+    const availableSlots = allTimeSlots.filter((slot) => {
         const isBooked = bookedSlotIds.has(slot._id.toString());
         if (isBooked) return false;
         if (isToday) {
-            const slotStartTime = dayjs.tz(`${dayjs(date).format('YYYY-MM-DD')} ${slot.start_time}`, 'YYYY-MM-DD HH:mm', VIETNAM_TIMEZONE);
+            const slotStartTime = dayjs.tz(
+                `${dayjs(date).format('YYYY-MM-DD')} ${slot.start_time}`,
+                'YYYY-MM-DD HH:mm',
+                VIETNAM_TIMEZONE,
+            );
             if (slotStartTime.isBefore(nowInVietnam)) {
                 return false;
             }
@@ -220,12 +230,9 @@ async function findAvailableSlotsForRoom({ roomId, date }) {
     return availableSlots;
 }
 
-export const handleChat = async (message, userId = 'defaultUser') => {
-    // Khởi tạo hoặc lấy lại phiên làm việc của user
-    if (!userSessions[userId]) {
-        userSessions[userId] = { context: {}, lastIntent: null };
-    }
-    const session = userSessions[userId];
+export const handleChat = async (message, sessionId) => {
+    if (!sessions.has(sessionId)) sessions.set(sessionId, { context: {}, lastIntent: null });
+    const session = sessions.get(sessionId);
 
     let systemPrompt = `Bạn là trợ lý ảo của PNM-BOX, một hệ thống cafe phim. Hãy luôn trả lời một cách lịch sự, thân thiện, rõ ràng và hữu ích. Khi cung cấp danh sách (phim, phòng, khung giờ), hãy trình bày mỗi mục trên một dòng để dễ đọc. Nếu người dùng hỏi thông tin mà bạn không có hoặc không chắc chắn, hãy thông báo một cách trung thực và đề nghị hỗ trợ thêm. Nếu thiếu thông tin để xử lý yêu cầu, hãy lịch sự hỏi lại người dùng để bổ sung. Phân tích kỹ thông tin hỗ trợ được cung cấp để đưa ra câu trả lời chính xác.`;
 
@@ -239,7 +246,7 @@ export const handleChat = async (message, userId = 'defaultUser') => {
     const allRoomTypes = await roomTypeModel.find({});
     const extractedInfo = await extractEntities(message, allBranches, allRoomTypes);
     const newIntent = extractedInfo.intent;
-    
+
     // Lưu thông tin mới vào ngữ cảnh
     if (extractedInfo.branchName) session.context.branchName = extractedInfo.branchName;
     if (extractedInfo.date) session.context.date = extractedInfo.date.toISOString();
@@ -265,8 +272,9 @@ export const handleChat = async (message, userId = 'defaultUser') => {
             { $project: { name: '$film_details.name' } },
         ]);
         contextForLLM.database_info = { type: 'hot_film_list', films: hotFilms };
-        contextForLLM.notes_for_assistant.push("Người dùng muốn biết danh sách phim hot. Hãy trình bày các phim trong 'database_info.films'.");
-    
+        contextForLLM.notes_for_assistant.push(
+            "Người dùng muốn biết danh sách phim hot. Hãy trình bày các phim trong 'database_info.films'.",
+        );
     } else if (newIntent === 'find_available_rooms') {
         // Kết hợp thông tin mới và ngữ cảnh cũ
         const currentBranchName = session.context.branchName;
@@ -283,7 +291,7 @@ export const handleChat = async (message, userId = 'defaultUser') => {
             const branchNames = allBranches.map((b) => b.name).join(', ');
             return `Xin lỗi, PNM-BOX không tìm thấy chi nhánh "${currentBranchName}". Các chi nhánh hiện có là: ${branchNames}.`;
         }
-        
+
         // Xử lý thời gian thông minh
         const nowInVietnam = dayjs().tz(VIETNAM_TIMEZONE);
         const openingTime = dayjs(nowInVietnam).hour(8).minute(0).second(0);
@@ -300,7 +308,7 @@ export const handleChat = async (message, userId = 'defaultUser') => {
             effectiveDate = nowInVietnam.add(1, 'day').toDate();
             noteForLLM = `Người dùng nhắn tin sau giờ đóng cửa. Hệ thống đã tự động chuyển sang tìm kiếm phòng cho ngày mai (${dayjs(effectiveDate).format('DD/MM/YYYY')}).`;
         }
-        
+
         if (!effectiveStartTime && !effectiveEndTime) {
             effectiveStartTime = '08:00';
             effectiveEndTime = '23:30';
@@ -310,9 +318,9 @@ export const handleChat = async (message, userId = 'defaultUser') => {
                 noteForLLM = `Người dùng không nói rõ thời gian, hệ thống tự động tìm kiếm cho cả ngày.`;
             }
         }
-        
+
         session.context.pendingAction = null;
-        
+
         // Phân nhánh logic dựa trên việc có hỏi phòng cụ thể hay không
         if (currentRoomName) {
             const targetRoom = await roomModel.findOne({ name: currentRoomName, branch: targetBranch._id });
@@ -332,7 +340,7 @@ export const handleChat = async (message, userId = 'defaultUser') => {
                     branch: targetBranch.name,
                     date: dayjs(effectiveDate).format('DD/MM/YYYY'),
                 },
-                available_slots: availableSlots.map(slot => `${slot.start_time} - ${slot.end_time}`),
+                available_slots: availableSlots.map((slot) => `${slot.start_time} - ${slot.end_time}`),
             };
 
             let availabilityNote = `Người dùng muốn biết các khung giờ còn trống của phòng ${targetRoom.name} ngày ${dayjs(effectiveDate).format('DD/MM/YYYY')}.`;
@@ -342,7 +350,6 @@ export const handleChat = async (message, userId = 'defaultUser') => {
                 availabilityNote += ` Kết quả: phòng này đã được đặt hết hoặc đã qua hết các khung giờ có thể đặt trong ngày. Hãy thông báo cho người dùng và có thể gợi ý họ kiểm tra ngày khác.`;
             }
             contextForLLM.notes_for_assistant.push(availabilityNote);
-
         } else {
             const availableRooms = await findAvailableRoomsForTimeRange({
                 branchId: targetBranch._id,
@@ -361,7 +368,7 @@ export const handleChat = async (message, userId = 'defaultUser') => {
                 },
                 available_rooms: availableRooms,
             };
-            
+
             contextForLLM.notes_for_assistant.push(noteForLLM);
             let availabilityNote = `Người dùng muốn tìm phòng trống liên tục từ ${effectiveStartTime} đến ${effectiveEndTime} ngày ${dayjs(effectiveDate).format('DD/MM/YYYY')} tại chi nhánh ${targetBranch.name}.`;
             if (availableRooms.length > 0) {
@@ -389,7 +396,7 @@ export const handleChat = async (message, userId = 'defaultUser') => {
             content: `Dưới đây là thông tin tôi đã thu thập được và yêu cầu của người dùng. Hãy giúp tôi tạo ra một câu trả lời phù hợp:\n<request_data>\n${JSON.stringify(
                 contextForLLM,
                 null,
-                2
+                2,
             )}\n</request_data>\n\nHãy trả lời trực tiếp câu hỏi/yêu cầu của người dùng ("${message}") dựa trên những thông tin trên.`,
         },
     ];

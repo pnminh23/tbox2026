@@ -19,7 +19,7 @@ import dynamic from "next/dynamic";
 // Thay thế bằng:
 const DynamicLoadingItem = dynamic(
     () => import("@/components/common/LoadingItem/LoadingItem"),
-    { ssr: false }
+    { ssr: false },
 );
 
 const Slider = ({
@@ -48,7 +48,6 @@ const Slider = ({
     //                 throw new Error(`HTTP error! Status: ${response.status}`);
     //             }
     //             const result = await response.json();
-    //             console.log('API Response:', result);
 
     //             if (result.status === 'success' && result.data && result.data.items) {
     //                 setItems(result.data.items);

@@ -1,9 +1,7 @@
 import useSWR, { mutate } from "swr";
-import axiosInstance from "../config/axios";
+import axiosInstance, { fetcher } from "../config/axios";
 
 const API_URL = `/api/promotion`;
-
-const fetcher = (url) => axiosInstance.get(url).then((res) => res.data);
 
 export const useAllPromotion = () => {
     const endpoint = `${API_URL}/get-all`;

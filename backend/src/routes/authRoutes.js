@@ -1,24 +1,25 @@
 import express from 'express';
 import {
+    forgotPassword,
     login,
     logout,
     register,
+    resendOTP,
     resetPassword,
     verifyEmail,
     verifyOtpResetPassword,
-    resendOTP,
-    forgotPassword,
 } from '../controllers/authController.js';
+import { authLimiter, otpLimiter } from '../middlewares/rateLimit.js';
 
 const authRouter = express.Router();
 
-authRouter.post('/register', register);
-authRouter.post('/login', login);
+authRouter.post('/register', authLimiter, register);
+authRouter.post('/login', authLimiter, login);
 authRouter.post('/logout', logout);
-authRouter.post('/verify-account', verifyEmail);
-authRouter.post('/resend-otp', resendOTP);
-authRouter.post('/forgotPassword', forgotPassword);
-authRouter.post('/verify-otp-reset-password', verifyOtpResetPassword);
-authRouter.post('/reset-password', resetPassword);
+authRouter.post('/verify-account', otpLimiter, verifyEmail);
+authRouter.post('/resend-otp', otpLimiter, resendOTP);
+authRouter.post('/forgotPassword', otpLimiter, forgotPassword);
+authRouter.post('/verify-otp-reset-password', otpLimiter, verifyOtpResetPassword);
+authRouter.post('/reset-password', otpLimiter, resetPassword);
 
 export default authRouter;

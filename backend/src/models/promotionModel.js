@@ -1,14 +1,14 @@
 import mongoose from 'mongoose';
 
-const promotions = new mongoose.Schema(
+const promotionSchema = new mongoose.Schema(
     {
-        name: { type: String, required: true, unique: true },
-        discountPercent: { type: Number, required: true },
-        quantity: { type: Number, required: true },
+        name: { type: String, required: true, unique: true, uppercase: true, trim: true },
+        discountPercent: { type: Number, required: true, min: 1, max: 100 },
+        quantity: { type: Number, required: true, min: 0 },
     },
-    { timestamps: true }
+    { timestamps: true },
 );
 
-const promotionModel = mongoose.models.promotions || mongoose.model('promotions', promotions);
+const promotionModel = mongoose.models.promotions || mongoose.model('promotions', promotionSchema);
 
 export default promotionModel;

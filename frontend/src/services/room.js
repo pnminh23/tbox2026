@@ -1,9 +1,7 @@
 import useSWR, { mutate } from "swr";
-import axiosInstance from "../config/axios";
+import axiosInstance, { fetcher } from "../config/axios";
 
 const API_URL = `/api/room`;
-
-const fetcher = (url) => axiosInstance.get(url).then((res) => res.data);
 
 export const useRoomByBranchAndType = (branchId, typeRoomId) => {
     const endpoint =
@@ -46,7 +44,7 @@ export const createRoom = async (formData) => {
                 headers: {
                     "Content-Type": "multipart/form-data",
                 },
-            }
+            },
         );
 
         return res.data; // trả về response data để frontend xử lý
@@ -69,7 +67,7 @@ export const editRoomById = async (_id, formData) => {
                 headers: {
                     "Content-Type": "multipart/form-data",
                 },
-            }
+            },
         );
         const messageFromServer =
             res.data?.message || res.statusText || "Yêu cầu thành công.";
@@ -120,7 +118,7 @@ export const createRoomType = async (roomTypeData) => {
     try {
         const res = await axiosInstance.post(
             `${API_URL}/create-roomType`,
-            roomTypeData
+            roomTypeData,
         );
         return res.data;
     } catch (err) {
@@ -151,7 +149,7 @@ export const editRoomTypeById = async (_id, roomTypeData) => {
     try {
         const res = await axiosInstance.put(
             `${API_URL}/edit-type-room/${_id}`,
-            roomTypeData
+            roomTypeData,
         );
         const messageFromServer =
             res.data?.message || "Cập nhật loại phòng thành công.";
@@ -171,7 +169,7 @@ export const editRoomTypeById = async (_id, roomTypeData) => {
 export const deleteRoomTypeById = async (_id) => {
     try {
         const res = await axiosInstance.delete(
-            `${API_URL}/delete-roomType/${_id}`
+            `${API_URL}/delete-roomType/${_id}`,
         );
         const messageFromServer =
             res.data?.message || "Xóa loại phòng thành công.";

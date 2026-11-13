@@ -1,9 +1,7 @@
 import useSWR, { mutate } from "swr";
-import axiosInstance from "../config/axios";
+import axiosInstance, { fetcher } from "../config/axios";
 
 const API_URL = `/api/review`;
-
-const fetcher = (url) => axiosInstance.get(url).then((res) => res.data);
 
 export const useFeedbackByBranch = (branchId) => {
     const shouldFetch = branchId != null && branchId !== "";
@@ -36,7 +34,7 @@ export const createFeedback = async (data) => {
     } catch (error) {
         return {
             success: false,
-            error: error?.response?.data?.message || "Something went wrong",
+            message: error?.response?.data?.message || "Gửi đánh giá thất bại",
         };
     }
 };

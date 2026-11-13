@@ -1,20 +1,27 @@
-import axiosInstance from "../config/axios";
+import axiosInstance, { errorMessage } from "../config/axios";
 
-const API_URL = `/api/payos`;
-
-export const createPayment = async (data) => {
+/**
+ * Tạo link PayOS rồi mở trang thanh toán. Số tiền do server tính.
+ * type: 'deposit' (cọc 50%) | 'full' (toàn bộ phần còn lại)
+ * newTab: admin mở link ở tab mới để đưa khách quét
+ */
+export const payBooking = async (
+    id_booking,
+    type = "full",
+    { newTab = false } = {},
+) => {
     try {
-        const response = await axiosInstance.post(`${API_URL}/create`, data);
-
-        return {
-            success: true,
-            checkoutUrl: response.data.checkoutUrl,
-        };
+        const { data } = await axiosInstance.post(`/api/payos/create`, {
+            id_booking,
+            type,
+        });
+        if (newTab) window.open(data.checkoutUrl, "_blank");
+        else window.location.href = data.checkoutUrl;
+        return { success: true };
     } catch (error) {
-        console.error("Error creating Booking:", error);
         return {
             success: false,
-            message: error?.response?.data?.message || "Something went wrong",
+            message: errorMessage(error, "Không tạo được link thanh toán"),
         };
     }
 };

@@ -6,15 +6,17 @@ import noImage from '@public/static/img/avatar/no_image.jpg'; // Đảm bảo đ
 import Image from 'next/image';
 import { useStyleClass } from '@/hooks/useStyleClass';
 import clsx from 'clsx';
+import { toast } from 'react-toastify';
 
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/jpg'];
-// const MAX_SIZE_BYTES = 5 * 1024 * 1024; // Ví dụ: 5MB
+// Đồng bộ với giới hạn upload ở backend/src/config/cloudinary.js
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const MAX_SIZE_BYTES = 5 * 1024 * 1024;
 
 const UploadFileImage = ({ defaultImage, onFileSelected, ...props }) => {
     const styleClass = useStyleClass(props, styles);
     // noImage.src sẽ được dùng nếu noImage là một đối tượng StaticImageData từ import
     const [imageUrl, setImageUrl] = useState(
-        defaultImage && defaultImage.trim() ? defaultImage : noImage.src || noImage
+        defaultImage && defaultImage.trim() ? defaultImage : noImage.src || noImage,
     );
     const [showPreview, setShowPreview] = useState(false);
     const fileInputRef = useRef(null);
@@ -66,17 +68,13 @@ const UploadFileImage = ({ defaultImage, onFileSelected, ...props }) => {
         if (file) {
             // 5. Kiểm tra định dạng file cơ bản phía client
             if (!ALLOWED_TYPES.includes(file.type)) {
-                alert(
-                    `Loại file không hợp lệ. Chỉ chấp nhận: ${ALLOWED_TYPES.map((type) => type.split('/')[1])
-                        .join(', ')
-                        .toUpperCase()}`
-                );
+                toast.error('Chỉ chấp nhận ảnh JPG, PNG, WEBP');
                 return;
             }
-            // if (file.size > MAX_SIZE_BYTES) {
-            //     alert(`Kích thước file quá lớn. Tối đa: ${MAX_SIZE_BYTES / (1024 * 1024)}MB`);
-            //     return;
-            // }
+            if (file.size > MAX_SIZE_BYTES) {
+                toast.error('Ảnh tối đa 5MB');
+                return;
+            }
 
             // Không cần revoke ở đây nữa vì useEffect với dependency [imageUrl] sẽ xử lý việc revoke URL cũ
             // khi imageUrl được set thành URL mới.

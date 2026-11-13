@@ -1,43 +1,25 @@
-import axios from "axios";
+import axios from 'axios';
 
-// Tạo axios instance với cấu hình mặc định
+export const API_URL = process.env.NEXT_PUBLIC_API_URL;
+export const TOKEN_KEY = 'token';
+
 const axiosInstance = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL,
+    baseURL: API_URL,
     withCredentials: true,
-    headers: {
-        "Content-Type": "application/json",
-        "ngrok-skip-browser-warning": "true", // Bỏ qua warning của ngrok
-    },
+    headers: { 'Content-Type': 'application/json' },
 });
 
-// Interceptor để xử lý request
-axiosInstance.interceptors.request.use(
-    (config) => {
-        // Thêm token từ localStorage vào header nếu có (cho ngrok mode)
-        const token = localStorage.getItem("token");
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
-    },
-    (error) => {
-        return Promise.reject(error);
-    }
-);
+// Gửi kèm token khi FE và API khác domain (cookie bên thứ ba có thể bị trình duyệt chặn)
+axiosInstance.interceptors.request.use((config) => {
+    const token = typeof window !== 'undefined' && localStorage.getItem(TOKEN_KEY);
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+    return config;
+});
 
-// Interceptor để xử lý response
-axiosInstance.interceptors.response.use(
-    (response) => {
-        return response;
-    },
-    (error) => {
-        // Xử lý lỗi chung
-        if (error.response?.status === 401) {
-            // Có thể redirect đến trang login
-            console.error("Unauthorized");
-        }
-        return Promise.reject(error);
-    }
-);
+export const fetcher = (url) => axiosInstance.get(url).then((res) => res.data);
+
+// Lấy message lỗi từ response API
+export const errorMessage = (error, fallback = 'Đã xảy ra lỗi, vui lòng thử lại') =>
+    error?.response?.data?.message || error?.message || fallback;
 
 export default axiosInstance;

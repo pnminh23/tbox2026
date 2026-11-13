@@ -30,8 +30,7 @@ const OtpVerification = ({ email, otp, setOtp, onVerify }) => {
 
     const handleResend = async () => {
         if (isResendEnabled) {
-            alert('Đã gửi lại OTP!');
-            setTimeLeft(60); // Reset lại 5 phút
+            setTimeLeft(60); // chờ 60s mới được gửi lại
             setIsResendEnabled(false);
 
             try {
