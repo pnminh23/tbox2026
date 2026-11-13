@@ -43,7 +43,9 @@ const Checkout = () => {
 
     const [contact, setContact] = useState({ name: '', phone: '', email: '' });
     const [touched, setTouched] = useState({});
-    const [film, setFilm] = useState(q.film);
+    // Chưa đụng tới (undefined) → theo phim trên URL; query chỉ có sau hydrate nên không đưa vào useState
+    const [pickedFilm, setPickedFilm] = useState();
+    const film = pickedFilm === undefined ? q.film : pickedFilm || undefined;
     const [combo, setCombo] = useState('');
     const [promoCode, setPromoCode] = useState('');
     const [promo, setPromo] = useState(null);
@@ -198,7 +200,7 @@ const Checkout = () => {
                         <h2 id="ck-film">Phim muốn xem</h2>
                         <span className={styles.muted}>Không bắt buộc, có thể chọn tại phòng</span>
                     </div>
-                    <FilmPicker films={films.slice(0, 10)} value={film} onChange={setFilm} />
+                    <FilmPicker films={films.slice(0, 10)} value={film} onChange={(id) => setPickedFilm(id ?? null)} />
                 </section>
 
                 <section aria-labelledby="ck-combo" className={styles.section}>
