@@ -7,7 +7,6 @@ import { formatMoney } from "@/function/formatMoney";
 
 const LocationsPage = () => {
     const { branches, isLoadingAllBranches } = useAllBranches();
-    console.log("branches", branches);
 
     return (
         <>
@@ -49,7 +48,7 @@ const LocationsPage = () => {
                                             className={
                                                 style.price
                                             }>{`${formatMoney(
-                                            type.base_price_per_minute * 30
+                                            type.base_price_per_minute * 30,
                                         )}/30 phút`}</p>
                                     </div>
                                 ))}

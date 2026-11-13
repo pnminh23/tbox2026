@@ -25,17 +25,16 @@ const DynamicLoadingFullPage = dynamic(
     {
         ssr: false, // Vẫn là key để tránh lỗi document is not defined
         loading: () => null,
-    }
+    },
 );
 import { createFeedback } from "@/services/feedback";
+import useBookingActions from "@/hooks/useBookingActions";
+import { canCustomerCancel, canPay } from "@/constants/booking";
 import { formatMoney } from "@/function/formatMoney";
-import { createPayment } from "@/services/payment";
 import { useRouter } from "next/router";
-import { editBooking } from "@/services/booking";
 
 const ListInvoice = ({ booking }) => {
     const [loading, setLoading] = useState(false);
-    const email = localStorage.getItem("email");
     const [feedback, setFeedback] = useState("");
     const [isPopupFeedback, setIsPopUpFeedback] = useState(false);
     const [feedbackRating, setFeedbackRating] = useState(0);
@@ -44,6 +43,7 @@ const ListInvoice = ({ booking }) => {
     const [isPopupPaymentStatus, setIsPopupPaymentStatus] = useState(false);
     const router = useRouter();
     const { status } = router.query;
+    const { cancel, pay } = useBookingActions(booking);
 
     useEffect(() => {
         if (status) {
@@ -62,8 +62,6 @@ const ListInvoice = ({ booking }) => {
         }
 
         const newFeedback = {
-            email,
-            branch: booking.room.branch._id,
             bookingId: booking._id,
             rating: feedbackRating,
             comment: feedback,
@@ -99,50 +97,6 @@ const ListInvoice = ({ booking }) => {
             </div>
         );
     }
-
-    const handlePayment = async () => {
-        const description = `${booking?.id_booking}`;
-        const expiredAt = dayjs().add(5, "minute").unix();
-        const newPayment = {
-            id_booking: booking?.id_booking,
-            email,
-            amount: booking?.payment_amount || 0,
-            description,
-            returnUrl: `http://localhost:3000/bookRoom/${booking?.id_booking}`,
-            cancelUrl: `http://localhost:3000/bookRoom/${booking?.id_booking}`,
-            expiredAt,
-        };
-
-        try {
-            const result = await createPayment(newPayment);
-            if (result?.checkoutUrl) {
-                window.location.href = result.checkoutUrl;
-            } else {
-                alert("Không lấy được link thanh toán!");
-            }
-        } catch {
-            alert("Có lỗi xảy ra khi khởi tạo thanh toán!");
-        }
-    };
-
-    const handleCancelBooking = async () => {
-        if (!booking) return;
-        if (
-            !window.confirm(
-                `Bạn có chắc muốn hủy đơn hàng "${booking._id}" không?`
-            )
-        )
-            return;
-
-        try {
-            const result = await editBooking(booking._id, { status: "ĐÃ HỦY" });
-            if (result.success) {
-                toast.success("Đã hủy đơn đặt phòng thành công!");
-            }
-        } catch (error) {
-            toast.error(error.message || "Có lỗi xảy ra khi hủy đơn.");
-        }
-    };
 
     return (
         <>
@@ -314,17 +268,15 @@ const ListInvoice = ({ booking }) => {
                     Trạng thái <p>{booking?.status || "Chưa rõ"}</p>
                 </div>
                 <div className={clsx(style.colAction, style.column)}>
-                    {booking?.isPay !== "ĐÃ THANH TOÁN" &&
-                        booking?.status !== "THẤT BẠI" &&
-                        booking?.status !== "ĐÃ HỦY" && (
-                            <Button
-                                rounded_10
-                                blue
-                                icon={<AiOutlinePayCircle />}
-                                onClick={handlePayment}>
-                                Thanh toán
-                            </Button>
-                        )}
+                    {canPay(booking) && (
+                        <Button
+                            rounded_10
+                            blue
+                            icon={<AiOutlinePayCircle />}
+                            onClick={() => pay()}>
+                            Thanh toán
+                        </Button>
+                    )}
                     {booking?.status === "HOÀN THÀNH" ? (
                         booking?.isReviewed ? (
                             <Button
@@ -344,13 +296,12 @@ const ListInvoice = ({ booking }) => {
                             </Button>
                         )
                     ) : (
-                        booking?.status !== "ĐÃ HỦY" &&
-                        booking?.status !== "THẤT BẠI" && (
+                        canCustomerCancel(booking) && (
                             <Button
                                 rounded_10
                                 red
                                 icon={<AiOutlineDelete />}
-                                onClick={handleCancelBooking}>
+                                onClick={cancel}>
                                 Hủy đơn
                             </Button>
                         )

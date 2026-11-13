@@ -1,55 +1,48 @@
-// services/cronJobs.js
+import cron from 'node-cron';
+import bookingModel, { BOOKING_STATUS, PAY_STATUS } from '../models/bookingModel.js';
+import { HOLD_MINUTES, populateBooking, releaseBooking } from './booking.js';
+import dayjs, { dayRange, now, slotTime } from '../utils/time.js';
 
-import cron from "node-cron";
-import dayjs from "dayjs";
-import bookingModel from "../models/bookingModel.js";
-
-// Sửa hàm để nhận `io` làm tham số
-const cancelExpiredBookings = async (io) => {
-  // console.log('Running cron job to cancel expired bookings...');
-  try {
-    const expirationTime = dayjs().subtract(15, "minute").toDate(); // Nên để 15 phút cho khớp với PayOS
-
-    // 1. Tìm tất cả booking cần hủy
-    const expiredBookings = await bookingModel
-      .find({
-        status: "CHỜ THANH TOÁN",
-        createdAt: { $lt: expirationTime },
-      })
-      .populate({
-        // Populate ngay lúc tìm kiếm
-        path: "room",
-        populate: { path: "type branch" },
-      })
-      .populate("time_slots")
-      .populate("film")
-      .populate("combo"); // Populate combo nếu có
-
-    if (expiredBookings.length > 0) {
-      const idsToCancel = expiredBookings.map((b) => b._id);
-
-      // 2. Cập nhật trạng thái của chúng trong DB
-      await bookingModel.updateMany(
-        { _id: { $in: idsToCancel } },
-        { $set: { status: "THẤT BẠI" } }
-      );
-
-      // 3. Lặp qua các booking vừa tìm được và gửi socket cho từng cái
-      for (const booking of expiredBookings) {
-        // Cập nhật trạng thái trong object để gửi đi cho đúng
-        booking.status = "THẤT BẠI";
-
-        // Dùng `io` đã được truyền vào để gửi sự kiện
-        io.emit("editBooking", booking);
-      }
+// Đơn chờ thanh toán quá hạn → THẤT BẠI, trả chỗ và mã giảm giá
+const expirePendingBookings = async (io) => {
+    const expired = await populateBooking(
+        bookingModel.find({
+            status: BOOKING_STATUS.PENDING,
+            createdAt: { $lt: dayjs().subtract(HOLD_MINUTES, 'minute').toDate() },
+        }),
+    );
+    for (const booking of expired) {
+        booking.status = BOOKING_STATUS.FAILED;
+        await booking.save();
+        await releaseBooking(booking);
+        io.emit('editBooking', booking);
     }
-  } catch (error) {
-    console.error("Error in cron job:", error);
-  }
 };
 
-// Sửa hàm start để nhận `io` và truyền nó đi
+// Đơn đã thanh toán đủ và đã hết giờ → HOÀN THÀNH (để khách đánh giá)
+const completeFinishedBookings = async (io) => {
+    const candidates = await populateBooking(
+        bookingModel.find({
+            status: BOOKING_STATUS.SUCCESS,
+            isPay: PAY_STATUS.FULL,
+            date: { $lte: dayRange(now()).$lte },
+        }),
+    );
+    for (const booking of candidates) {
+        const [first, last] = [booking.time_slots[0], booking.time_slots.at(-1)];
+        if (!last) continue;
+        // Khung giờ kết thúc lúc 00:00 thuộc ngày hôm sau
+        const end = slotTime(booking.date, last.end_time).add(last.end_time <= first.start_time ? 1 : 0, 'day');
+        if (end.isAfter(now())) continue;
+        booking.status = BOOKING_STATUS.DONE;
+        await booking.save();
+        io.emit('editBooking', booking);
+    }
+};
+
+const run = (job, io) => job(io).catch((err) => console.error(`Cron ${job.name}:`, err.message));
+
 export const startBookingCleanupJob = (io) => {
-  // Chạy hàm cancelExpiredBookings mỗi phút, truyền `io` vào
-  cron.schedule("* * * * *", () => cancelExpiredBookings(io));
+    cron.schedule('* * * * *', () => run(expirePendingBookings, io));
+    cron.schedule('*/5 * * * *', () => run(completeFinishedBookings, io));
 };

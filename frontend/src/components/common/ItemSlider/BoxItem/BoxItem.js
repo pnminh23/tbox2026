@@ -3,7 +3,6 @@ import Image from 'next/image';
 import noImage from '@public/static/img/avatar/no_image.jpg';
 
 const BoxItem = ({ box }) => {
-    console.log('box: ', box);
     return (
         <div className={style.item}>
             <div className={style.image}>

@@ -1,142 +1,65 @@
 import branchModel from '../models/branchModel.js';
-import roomTypeModel from '../models/roomTypeModel.js';
 import roomModel from '../models/roomModel.js';
-import { formatString } from '../services/formatString.js';
+import roomTypeModel from '../models/roomTypeModel.js';
+import { asyncHandler, fail, ok } from '../utils/http.js';
+import { formatString } from '../utils/format.js';
 
-export const createBranch = async (req, res) => {
-    let { name, address, phone } = req.body;
-    if (!name || !address || !phone)
-        return res.status(400).json({ success: false, message: 'Hãy nhập đẩy đủ các trường' });
+const byRoomNumber = (a, b) => a.name.localeCompare(b.name, 'vi', { numeric: true });
 
-    try {
-        name = formatString(name).toUpperCase();
-        address = formatString(address);
-        phone = formatString(phone);
-
-        const existingBranch = await branchModel.findOne({ name });
-        if (existingBranch) return res.status(400).json({ success: false, message: 'Phim này đã tồn tại' });
-
-        const allRoomTypes = await roomTypeModel.find({}, '_id'); // chỉ lấy trường _id
-        const typeRoomIds = allRoomTypes.map((rt) => rt._id);
-
-        const newBranch = await branchModel.create({
-            name,
-            address,
-            phone,
-            typeRoom: typeRoomIds,
-        });
-
-        await newBranch.save();
-        return res.status(200).json({ success: true, message: 'Thêm cơ sở mới thành công', data: newBranch });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
+const findBranch = async (_id) => {
+    const branch = await branchModel.findById(_id);
+    if (!branch) fail(404, 'Không tìm thấy cơ sở');
+    return branch;
 };
 
-// export const getAllBranch = async (req, res) => {
-//     try {
-//         const branches = await branchModel.find({}).populate('typeRoom');
+export const createBranch = asyncHandler(async (req, res) => {
+    const name = formatString(req.body.name).toUpperCase();
+    const address = formatString(req.body.address);
+    const phone = formatString(req.body.phone);
+    if (!name || !address || !phone) fail(400, 'Hãy nhập đầy đủ các trường');
 
-//         if (branches.length === 0)
-//             return res.status(400).json({ success: false, message: 'Không có cơ sở nào trong cơ sở dữ liệu' });
+    // Mặc định cơ sở mới có tất cả loại phòng
+    const typeRoom = await roomTypeModel.distinct('_id');
+    ok(res, await branchModel.create({ name, address, phone, typeRoom }), 'Thêm cơ sở mới thành công', 201);
+});
 
-//         return res.status(200).json({
-//             success: true,
-//             data: branches,
-//         });
-//     } catch (error) {
-//         res.status(500).json({ success: false, message: error.message });
-//     }
-// };
+// Kèm danh sách phòng của từng cơ sở
+export const getAllBranch = asyncHandler(async (req, res) => {
+    const [branches, rooms] = await Promise.all([
+        branchModel.find().populate('typeRoom').lean(),
+        roomModel.find().populate('type').lean(),
+    ]);
+    ok(
+        res,
+        branches.map((branch) => ({
+            ...branch,
+            rooms: rooms.filter((r) => String(r.branch) === String(branch._id)).sort(byRoomNumber),
+        })),
+    );
+});
 
-export const getAllBranch = async (req, res) => {
-    try {
-        const branches = await branchModel.find({}).populate('typeRoom').lean(); // cần .lean() để chỉnh sửa object trả về
+export const getBranchById = asyncHandler(async (req, res) => {
+    const branch = await branchModel.findById(req.params._id).populate('typeRoom');
+    if (!branch) fail(404, 'Không tìm thấy cơ sở');
+    ok(res, branch);
+});
 
-        const allRooms = await roomModel.find({}).populate('type').lean();
+export const editBranch = asyncHandler(async (req, res) => {
+    const branch = await findBranch(req.params._id);
+    const { name, phone, address, typeRoom } = req.body;
 
-        // Gắn rooms vào từng branch
-        const branchesWithRooms = branches.map((branch) => {
-            const roomsInBranch = allRooms
-                .filter((room) => room.branch.toString() === branch._id.toString())
-                .sort((a, b) => {
-                    const numA = parseInt(a.name, 10);
-                    const numB = parseInt(b.name, 10);
-                    return numA - numB;
-                });
-            return {
-                ...branch,
-                rooms: roomsInBranch,
-            };
-        });
+    if (name) branch.name = formatString(name).toUpperCase();
+    if (phone) branch.phone = formatString(phone);
+    if (address) branch.address = formatString(address);
+    if (Array.isArray(typeRoom)) branch.typeRoom = typeRoom;
 
-        return res.status(200).json({
-            success: true,
-            data: branchesWithRooms,
-        });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-};
+    await branch.save();
+    ok(res, branch, `Cập nhật cơ sở ${branch.name} thành công`);
+});
 
-export const getBranchById = async (req, res) => {
-    try {
-        const { _id } = req.params;
-
-        const branch = await branchModel.findOne({ _id }).populate('typeRoom');
-        if (!branch) {
-            return res.status(400).json({ success: false, message: 'Không có cơ sở này trong cơ sở dữ liệu' });
-        }
-
-        return res.status(200).json({
-            success: true,
-            data: branch,
-        });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-};
-
-export const editBranch = async (req, res) => {
-    try {
-        const { _id } = req.params;
-        const { name, phone, address, typeRoom } = req.body;
-        const branch = await branchModel.findOne({ _id });
-
-        if (!branch) {
-            return res.status(400).json({ success: false, message: 'Không có cơ sở này trong cơ sở dữ liệu' });
-        }
-
-        if (name) branch.name = formatString(name).toUpperCase();
-        if (phone) branch.phone = formatString(phone);
-        if (address) branch.address = formatString(address);
-
-        if (Array.isArray(typeRoom)) {
-            branch.typeRoom = typeRoom;
-        }
-
-        await branch.save();
-
-        return res.status(200).json({
-            success: true,
-            message: `Cập nhật cơ sở ${branch.name} thành công`,
-        });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-};
-
-export const deleteBranch = async (req, res) => {
-    try {
-        const { _id } = req.params;
-        const branch = await branchModel.findOne({ _id });
-        if (!branch) {
-            return res.status(400).json({ success: false, message: 'Cơ sở này không tồn tại' });
-        }
-        const result = await branchModel.deleteOne({ _id });
-
-        return res.status(200).json({ success: true, message: 'Xóa cơ sở thành công' });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-};
+export const deleteBranch = asyncHandler(async (req, res) => {
+    const branch = await findBranch(req.params._id);
+    if (await roomModel.exists({ branch: branch._id })) fail(400, 'Cơ sở vẫn còn phòng, hãy xóa phòng trước');
+    await branch.deleteOne();
+    ok(res, null, 'Xóa cơ sở thành công');
+});

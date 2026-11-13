@@ -1,125 +1,51 @@
-import newsModel from "../models/newsModel.js";
-import { formatString } from "../services/formatString.js";
-import { cloudinary } from "../config/cloudinary.js";
-// Tạo tin tức mới
-export const createNews = async (req, res) => {
-  const { title, content } = req.body;
-  if (!req.file) {
-    return res.status(400).json({ success: false, message: "Thiếu ảnh" });
-  }
-  if (!title || !content) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Tiêu đề và nội dung là bắt buộc." });
-  }
-  try {
-    // Kiểm tra dữ liệu đầu vào
+import newsModel from '../models/newsModel.js';
+import { destroyImage } from '../config/cloudinary.js';
+import { asyncHandler, fail, ok } from '../utils/http.js';
+import { formatString } from '../utils/format.js';
+import { sanitizeRichText } from '../utils/sanitize.js';
 
-    const imageUrl = req.file.path;
-    const publicId = req.file.filename;
-
-    // Tạo bản ghi mới
-    const newNews = await newsModel.create({
-      title: formatString(title),
-      content: formatString(content),
-      image: imageUrl,
-      imagePublicId: publicId,
-    });
-
-    res
-      .status(201)
-      .json({
-        success: true,
-        message: "Tạo tin tức thành công.",
-        data: newNews,
-      });
-  } catch (error) {
-    if (error.code === 11000) {
-      return res
-        .status(409)
-        .json({ success: false, message: "Tiêu đề hoặc nội dung đã tồn tại." });
-    }
-    res
-      .status(500)
-      .json({ success: false, message: "Lỗi server.", error: error.message });
-  }
+const findNews = async (_id) => {
+    const news = await newsModel.findById(_id);
+    if (!news) fail(404, 'Không tìm thấy tin tức');
+    return news;
 };
 
-// Lấy tất cả tin tức
-export const getAllNews = async (req, res) => {
-  try {
-    const newsList = await newsModel.find().sort({ createdAt: -1 }); // mới nhất trước
-    res
-      .status(200)
-      .json({ message: "Lấy danh sách tin tức thành công.", data: newsList });
-  } catch (error) {
-    res.status(500).json({ message: "Lỗi server.", error: error.message });
-  }
-};
-export const getNewsById = async (req, res) => {
-  try {
-    const news = await newsModel.findById(req.params._id);
-    if (!news)
-      return res.status(404).json({ message: "Không tìm thấy tin tức." });
-
-    res.status(200).json({ message: "Lấy tin tức thành công.", data: news });
-  } catch (error) {
-    res.status(500).json({ message: "Lỗi server.", error: error.message });
-  }
-};
-
-export const updateNews = async (req, res) => {
-  const { _id } = req.params;
-  try {
+export const createNews = asyncHandler(async (req, res) => {
     const { title, content } = req.body;
-    const updatedNews = await newsModel.findOne({ _id });
+    if (!req.file) fail(400, 'Thiếu ảnh');
+    if (!title || !content) fail(400, 'Tiêu đề và nội dung là bắt buộc');
 
-    if (!updatedNews) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Không tìm thấy tin" });
-    }
+    const news = await newsModel.create({
+        title: formatString(title),
+        content: sanitizeRichText(content),
+        image: req.file.path,
+        imagePublicId: req.file.filename,
+    });
+    ok(res, news, 'Tạo tin tức thành công', 201);
+});
 
-    // Cập nhật title và content nếu có
-    if (title !== undefined) updatedNews.title = formatString(title);
-    if (content !== undefined) updatedNews.content = formatString(content); // Giả sử content cũng cần formatString
+export const getAllNews = asyncHandler(async (req, res) => ok(res, await newsModel.find().sort({ createdAt: -1 })));
 
-    // Nếu có file ảnh mới được tải lên
+export const getNewsById = asyncHandler(async (req, res) => ok(res, await findNews(req.params._id)));
+
+export const updateNews = asyncHandler(async (req, res) => {
+    const news = await findNews(req.params._id);
+    const { title, content } = req.body;
+
+    if (title) news.title = formatString(title);
+    if (content) news.content = sanitizeRichText(content);
     if (req.file) {
-      // 1. Xóa file ảnh cũ nếu tồn tại
-      if (updatedNews.imagePublicId) {
-        await cloudinary.uploader.destroy(updatedNews.imagePublicId);
-      }
-      updatedNews.image = req.file.path;
-      updatedNews.imagePublicId = req.file.filename;
+        await destroyImage(news.imagePublicId);
+        news.image = req.file.path;
+        news.imagePublicId = req.file.filename;
     }
+    await news.save();
+    ok(res, news, 'Cập nhật tin tức thành công');
+});
 
-    await updatedNews.save();
-
-    res
-      .status(200)
-      .json({ message: "Cập nhật tin tức thành công.", data: updatedNews });
-  } catch (error) {
-    res.status(500).json({ message: "Lỗi server.", error: error.message });
-  }
-};
-
-// Xoá tin tức theo ID
-export const deleteNews = async (req, res) => {
-  try {
-    const deletedNews = await newsModel.findByIdAndDelete(req.params._id);
-    if (deletedNews.imagePublicId) {
-      await cloudinary.uploader.destroy(deletedNews.imagePublicId);
-    }
-    if (!deletedNews)
-      return res
-        .status(404)
-        .json({ message: "Không tìm thấy tin tức để xoá." });
-
-    res
-      .status(200)
-      .json({ message: "Xoá tin tức thành công.", data: deletedNews });
-  } catch (error) {
-    res.status(500).json({ message: "Lỗi server.", error: error.message });
-  }
-};
+export const deleteNews = asyncHandler(async (req, res) => {
+    const news = await findNews(req.params._id);
+    await destroyImage(news.imagePublicId);
+    await news.deleteOne();
+    ok(res, null, 'Xóa tin tức thành công');
+});

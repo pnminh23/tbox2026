@@ -3,22 +3,19 @@ import style from './LayoutAdmin.module.scss';
 import MenuTab from '@/components/common/MenuTab';
 import { useState } from 'react';
 import clsx from 'clsx';
-import useAdminAuth from '@/hooks/useAdminAuth';
+import useAuthGuard from '@/hooks/useAuthGuard';
 
+// user = true: trang tài khoản người dùng; ngược lại là trang admin
 const LayoutAdmin = ({ user, children, dark, title }) => {
     const [collapsed, setCollapsed] = useState(false);
-    
-    // Protect admin routes (client-side cho Vercel)
-    useAdminAuth();
+    const allowed = useAuthGuard(user ? undefined : 'admin');
 
-    const toggleSidebar = () => {
-        setCollapsed((prev) => !prev);
-    };
+    if (!allowed) return null;
 
     return (
         <div className={clsx(style.container, user && style.user)}>
             <div className={clsx(style.header, collapsed && style.collapsed)}>
-                <HeaderAdmin dark={dark} title={title} onToggleSidebar={toggleSidebar} />
+                <HeaderAdmin dark={dark} title={title} onToggleSidebar={() => setCollapsed((prev) => !prev)} />
             </div>
 
             <div className={style.menutab}>

@@ -1,218 +1,124 @@
-import axiosInstance from "../config/axios";
 import useSWR, { mutate } from "swr";
+import axiosInstance, { errorMessage, fetcher } from "../config/axios";
 
 const API_URL = `/api/booking`;
-const fetcher = (url) => axiosInstance.get(url).then((res) => res.data);
 
-export const getBookedByDate = async (roomID, dateISO) =>
+// Làm mới mọi cache SWR liên quan đến đơn đặt phòng
+export const refreshBookings = () =>
+    mutate((key) => typeof key === "string" && key.startsWith(API_URL));
+
+// Hook SWR dùng chung; path = null thì không gọi API
+const useBookingApi = (path, options) => {
+    const {
+        data,
+        error,
+        isLoading,
+        mutate: revalidate,
+    } = useSWR(path && `${API_URL}${path}`, fetcher, options);
+    return { data: data?.data, isLoading, isError: error, mutate: revalidate };
+};
+
+export const getBookedByDate = (roomID, day) =>
     axiosInstance
-        .get(`${API_URL}/get-book-timeSlots-by-room/${roomID}/${dateISO}`)
+        .get(`${API_URL}/get-book-timeSlots-by-room/${roomID}/${day}`)
         .then((r) => r.data.data);
 
-export const createBooking = async (BookingData) => {
+export const createBooking = async (bookingData) => {
     try {
-        const response = await axiosInstance.post(
+        const { data } = await axiosInstance.post(
             `${API_URL}/create`,
-            BookingData
+            bookingData,
         );
-
-        await mutate(`${API_URL}/get-booking-by-email-current`);
-        await mutate(`${API_URL}/get-booking-by-email`);
-        await mutate(`${API_URL}/get-booking-by-id`);
-
-        return {
-            success: true,
-            message: response.data.message,
-            data: response.data,
-        };
+        refreshBookings();
+        return { success: true, message: data.message, data };
     } catch (error) {
-        console.error("Error creating Booking:", error);
-        return {
-            success: false,
-            message: error?.response?.data?.message || "Something went wrong",
-        };
+        return { success: false, message: errorMessage(error) };
     }
 };
 
+export const editBooking = async (_id, payload) => {
+    try {
+        const { data } = await axiosInstance.put(
+            `${API_URL}/edit/${_id}`,
+            payload,
+        );
+        refreshBookings();
+        return { success: true, message: data.message, data: data.data };
+    } catch (error) {
+        return { success: false, message: errorMessage(error) };
+    }
+};
+
+/* ---------- Đơn lẻ ---------- */
+
 export const useBookingByOrderCode = (orderCode) => {
-    const shouldFetch = orderCode != null && orderCode !== "";
-    const endpoint = shouldFetch
-        ? `${API_URL}/get-booking-by-orderCode/${orderCode}`
-        : null;
-    const { data, error, isLoading } = useSWR(endpoint, fetcher, {
-        shouldRetryOnError: true,
-        revalidateOnFocus: true,
-    });
-
-    return {
-        booking: data?.data,
-        isLoading,
-        isError: error,
-    };
+    const { data, ...rest } = useBookingApi(
+        orderCode ? `/get-booking-by-orderCode/${orderCode}` : null,
+    );
+    return { booking: data, ...rest };
 };
 
-export const useBookingById = (id_booking) => {
-    const shouldFetch = id_booking != null && id_booking !== "";
-    const endpoint = shouldFetch
-        ? `${API_URL}/get-booking-by-id/${id_booking}`
-        : null;
-    const { data, error, isLoading, mutate } = useSWR(endpoint, fetcher, {
-        shouldRetryOnError: true,
-        revalidateOnFocus: true,
-    });
-
-    return {
-        booking: data?.data,
-        isLoading,
-        isError: error,
-        mutate,
-    };
+export const useBookingById = (id) => {
+    const { data, ...rest } = useBookingApi(
+        id ? `/get-booking-by-id/${id}` : null,
+    );
+    return { booking: data, ...rest };
 };
+
+/* ---------- Người dùng đăng nhập ---------- */
 
 export const useAllBookingByEmailCurrent = () => {
-    const endpoint = `${API_URL}/get-booking-by-email-current`;
-    const { data, error, isLoading } = useSWR(endpoint, fetcher, {
-        shouldRetryOnError: true,
-        revalidateOnFocus: true,
-    });
-
-    return {
-        booking: data?.data,
-        isLoading,
-        isError: error,
-    };
+    const { data, ...rest } = useBookingApi("/get-booking-by-email-current");
+    return { booking: data, ...rest };
 };
 
 export const useAllBookingByEmail = () => {
-    const endpoint = `${API_URL}/get-all-booking-by-email`;
-    const { data, error, isLoading } = useSWR(endpoint, fetcher, {
-        shouldRetryOnError: true,
-        revalidateOnFocus: true,
-    });
-
-    return {
-        booking: data?.data,
-        isLoading,
-        isError: error,
-    };
+    const { data, ...rest } = useBookingApi("/get-all-booking-by-email");
+    return { booking: data, ...rest };
 };
 
 export const useAllBookingByEmailAndMonth = (month, year) => {
-    const endpoint = `${API_URL}/get-booking-by-email-and-month/${month}/${year}`;
-    const { data, error, isLoading } = useSWR(endpoint, fetcher, {
-        shouldRetryOnError: true,
-        revalidateOnFocus: true,
-    });
-    const mutateBooking = () => mutate(endpoint);
-
-    return {
-        booking: data?.data,
-        isLoading,
-        isError: error,
-        mutateBooking,
-    };
+    const {
+        data,
+        mutate: revalidate,
+        ...rest
+    } = useBookingApi(
+        month && year
+            ? `/get-booking-by-email-and-month/${month}/${year}`
+            : null,
+    );
+    return { booking: data, mutateBooking: revalidate, ...rest };
 };
 
 export const useBookingStatsByEmail = () => {
-    const endpoint = `${API_URL}/get-booking-stats-by-email`;
-    const { data, error, isLoading } = useSWR(endpoint, fetcher, {
-        shouldRetryOnError: true,
-        revalidateOnFocus: true,
-    });
-
-    return {
-        booking: data?.data,
-        isLoading,
-        isError: error,
-    };
+    const { data, ...rest } = useBookingApi("/get-booking-stats-by-email");
+    return { booking: data, ...rest };
 };
 
-export const useCurrentActiveRoomsWithBookingId = () => {
-    const endpoint = `${API_URL}/get-room-booking-current`;
-    const { data, error, isLoading } = useSWR(endpoint, fetcher, {
-        shouldRetryOnError: true,
-        revalidateOnFocus: true,
-        refreshInterval: 5000,
-    });
+/* ---------- Admin ---------- */
 
-    return {
-        roomBooking: data?.data,
-        isLoading,
-        isError: error,
-    };
+export const useCurrentActiveRoomsWithBookingId = () => {
+    const { data, ...rest } = useBookingApi("/get-room-booking-current", {
+        refreshInterval: 30000,
+    });
+    return { roomBooking: data, ...rest };
 };
 
 export const useAllBookings = () => {
-    const endpoint = `${API_URL}/get-all-booking`;
-    const { data, error, isLoading } = useSWR(endpoint, fetcher, {
-        shouldRetryOnError: true,
-        revalidateOnFocus: true,
-    });
-
-    return {
-        bookings: data?.data,
-        isLoading,
-        isError: error,
-    };
+    const { data, ...rest } = useBookingApi("/get-all-booking");
+    return { bookings: data, ...rest };
 };
 
 export const useAllBookingsByDate = (date) => {
-    const endpoint = `${API_URL}/get-all-booking-by-date?date=${date}`;
-    const { data, error, isLoading } = useSWR(endpoint, fetcher, {
-        shouldRetryOnError: true,
-        revalidateOnFocus: true,
-    });
-
-    return {
-        bookings: data?.data,
-        isLoading,
-        isError: error,
-    };
+    const { data, ...rest } = useBookingApi(
+        date ? `/get-all-booking-by-date?date=${date}` : null,
+    );
+    return { bookings: data, ...rest };
 };
 
 export const useAllBookingsByMonth = (month) => {
-    const endpoint = `${API_URL}/get-all-booking-by-month?month=${month}`;
-    const { data, error, isLoading } = useSWR(endpoint, fetcher, {
-        shouldRetryOnError: true,
-        revalidateOnFocus: true,
-    });
-
-    return {
-        bookings: data?.data,
-        isLoading,
-        isError: error,
-    };
-};
-
-export const editBooking = async (_id, data) => {
-    try {
-        // Kiểm tra nếu data không tồn tại hoặc không có key nào
-        if (!data || Object.keys(data).length === 0) {
-            throw {
-                success: false,
-                message: "Dữ liệu chỉnh sửa không được để trống",
-            };
-        }
-
-        const res = await axiosInstance.put(`${API_URL}/edit/${_id}`, data);
-
-        await mutate(`${API_URL}/get-booking-by-email-current`);
-        await mutate(`${API_URL}/get-booking-by-email`);
-        await mutate(`${API_URL}/get-booking-by-id`);
-        await mutate(`${API_URL}/get-all-booking`);
-
-        return {
-            success: true,
-            message: "Cập nhật thành công",
-            data: res.data,
-        };
-    } catch (err) {
-        throw (
-            err.response?.data ||
-            err || {
-                success: false,
-                message: "Đã xảy ra lỗi khi chỉnh sửa film",
-            }
-        );
-    }
+    const { data, ...rest } = useBookingApi(
+        month ? `/get-all-booking-by-month?month=${month}` : null,
+    );
+    return { bookings: data, ...rest };
 };

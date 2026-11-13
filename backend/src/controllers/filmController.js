@@ -1,337 +1,97 @@
-import filmModel from "../models/filmModel.js";
-import { formatString } from "../services/formatString.js";
-import bookingModel from "../models/bookingModel.js";
-import { cloudinary } from "../config/cloudinary.js";
+import filmModel from '../models/filmModel.js';
+import bookingModel from '../models/bookingModel.js';
+import { destroyImage } from '../config/cloudinary.js';
+import { asyncHandler, fail, ok } from '../utils/http.js';
+import { formatString } from '../utils/format.js';
 
-const normalizeCategory = (str) => {
-  return str
-    .split("-")
-    .map((part) =>
-      part
-        .trim()
-        .split(" ")
-        .map(
-          (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+// "hành động - phiêu lưu" → "Hành Động - Phiêu Lưu"
+const normalizeCategory = (str) =>
+    formatString(str)
+        .split('-')
+        .map((part) =>
+            part
+                .trim()
+                .split(' ')
+                .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+                .join(' '),
         )
-        .join(" ")
-    )
-    .join(" - ");
-};
-export const createFilm = async (req, res) => {
-  const { name, nameEnglish, category, release_date, duration, country } =
-    req.body;
+        .join(' - ');
 
-  if (
-    !name ||
-    !nameEnglish ||
-    !category ||
-    !release_date ||
-    !duration ||
-    !country
-  )
-    return res
-      .status(400)
-      .json({ success: false, message: "Hãy nhập đẩy đủ các trường" });
-  if (!req.file) {
-    return res.status(400).json({ success: false, message: "Thiếu ảnh" });
-  }
-  try {
-    const existingFilm = await filmModel.findOne({ name });
-    if (existingFilm)
-      return res
-        .status(400)
-        .json({ success: false, message: "Phim này đã tồn tại" });
-    const imageUrl = req.file.path;
-    const publicId = req.file.filename;
+const toCategories = (category) => [].concat(category).filter(Boolean).map(normalizeCategory);
 
-    const normalizedCategory = Array.isArray(category)
-      ? category.map(normalizeCategory)
-      : [normalizeCategory(category)];
+const TEXT_FIELDS = ['name', 'nameEnglish', 'release_date', 'duration', 'country'];
 
-    const newfilm = await filmModel.create({
-      name: formatString(name),
-      nameEnglish: formatString(nameEnglish),
-      category: normalizedCategory,
-      release_date: formatString(release_date),
-      duration: formatString(duration),
-      image: imageUrl,
-      imagePublicId: publicId,
-      country: formatString(country),
-    });
-
-    return res
-      .status(200)
-      .json({ success: true, message: "Thêm phim thành công" });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
+const pickFilm = (body) => {
+    const data = {};
+    TEXT_FIELDS.forEach((key) => body[key] !== undefined && (data[key] = formatString(String(body[key]))));
+    if (body.category !== undefined) data.category = toCategories(body.category);
+    return data;
 };
 
-export const getAllFilms = async (req, res) => {
-  try {
-    const films = await filmModel.find({}).sort({ createdAt: -1 });
-
-    if (films.length === 0) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Không có thể loại nào trong cơ sở dữ liệu",
-        });
-    }
-
-    return res.status(200).json({
-      success: true,
-      data: films,
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
+const findFilm = async (_id) => {
+    const film = await filmModel.findById(_id);
+    if (!film) fail(404, 'Không tìm thấy phim');
+    return film;
 };
 
-export const getFilmsByCurrentYear = async (req, res) => {
-  try {
-    const currentYear = new Date().getFullYear().toString();
-    const films = await filmModel.find({ release_date: currentYear });
+export const createFilm = asyncHandler(async (req, res) => {
+    const data = pickFilm(req.body);
+    if (TEXT_FIELDS.some((k) => !data[k]) || !data.category?.length) fail(400, 'Hãy nhập đầy đủ các trường');
+    if (!req.file) fail(400, 'Thiếu ảnh');
 
-    if (films.length === 0) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Không có thể loại nào trong cơ sở dữ liệu",
-        });
-    }
+    const film = await filmModel.create({ ...data, image: req.file.path, imagePublicId: req.file.filename });
+    ok(res, film, 'Thêm phim thành công', 201);
+});
 
-    return res.status(200).json({
-      success: true,
-      data: films,
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
+export const getAllFilms = asyncHandler(async (req, res) => ok(res, await filmModel.find().sort({ createdAt: -1 })));
 
-export const getFilmById = async (req, res) => {
-  try {
-    const { _id } = req.params;
+export const getFilmsByCurrentYear = asyncHandler(async (req, res) =>
+    ok(res, await filmModel.find({ release_date: String(new Date().getFullYear()) }).sort({ createdAt: -1 })),
+);
 
-    const film = await filmModel
-      .findOne({ _id })
-      .populate("category", "name -_id");
+export const getFilmById = asyncHandler(async (req, res) => ok(res, await findFilm(req.params._id)));
 
-    if (film.length === 0) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Không có thể loại nào trong cơ sở dữ liệu",
-        });
-    }
+export const getFilmsByCategory = asyncHandler(async (req, res) => {
+    if (!req.query.name) fail(400, 'Thiếu tham số thể loại (name)');
+    ok(res, await filmModel.find({ category: normalizeCategory(req.query.name) }));
+});
 
-    return res.status(200).json({
-      success: true,
-      message: "Lấy data phim thành công",
-      data: film,
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
+export const getFilmsByYear = asyncHandler(async (req, res) => {
+    if (!req.query.release_date) fail(400, 'Thiếu tham số release_date');
+    ok(res, await filmModel.find({ release_date: req.query.release_date }));
+});
 
-export const getFilmsByCategory = async (req, res) => {
-  try {
-    const { name } = req.query;
-
-    if (!name) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Thiếu tham số category (name)" });
-    }
-
-    // Normalize lại thể loại giống như khi tạo phim
-    const normalizedCategory = normalizeCategory(name);
-
-    const films = await filmModel.find({
-      category: { $in: [normalizedCategory] },
-    });
-
-    if (films.length === 0) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: "Không tìm thấy phim thuộc thể loại này",
-        });
-    }
-
-    return res.status(200).json({
-      success: true,
-      data: films,
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-export const getFilmsByYear = async (req, res) => {
-  try {
-    const { release_date } = req.query;
-
-    if (!release_date) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Thiếu tham số release_date " });
-    }
-
-    const films = await filmModel.find({
-      release_date: { $in: [release_date] },
-    });
-
-    if (films.length === 0) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: "Không tìm thấy phim thuộc thể loại này",
-        });
-    }
-
-    return res.status(200).json({
-      success: true,
-      data: films,
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-export const getTop10MostBookedFilms = async (req, res) => {
-  try {
+export const getTop10MostBookedFilms = asyncHandler(async (req, res) => {
     const topFilms = await bookingModel.aggregate([
-      {
-        $group: {
-          _id: "$film",
-          totalBookings: { $sum: 1 },
-        },
-      },
-      {
-        $sort: { totalBookings: -1 },
-      },
-      {
-        $limit: 10,
-      },
-      {
-        $lookup: {
-          from: "films", // collection name đúng (trong MongoDB sẽ là 'films')
-          localField: "_id",
-          foreignField: "_id",
-          as: "filmInfo",
-        },
-      },
-      {
-        $unwind: "$filmInfo",
-      },
-      {
-        $project: {
-          _id: "$filmInfo._id",
-          name: "$filmInfo.name",
-          nameEnglish: "$filmInfo.nameEnglish",
-          image: "$filmInfo.image",
-          category: "$filmInfo.category",
-          release_date: "$filmInfo.release_date",
-          duration: "$filmInfo.duration",
-          country: "$filmInfo.country",
-          totalBookings: 1,
-        },
-      },
+        { $match: { film: { $ne: null } } },
+        { $group: { _id: '$film', totalBookings: { $sum: 1 } } },
+        { $sort: { totalBookings: -1 } },
+        { $limit: 10 },
+        { $lookup: { from: 'films', localField: '_id', foreignField: '_id', as: 'film' } },
+        { $unwind: '$film' },
+        { $replaceRoot: { newRoot: { $mergeObjects: ['$film', { totalBookings: '$totalBookings' }] } } },
     ]);
+    ok(
+        res,
+        topFilms.map((film, index) => ({ ...film, index })),
+    );
+});
 
-    const topFilmsWithIndex = topFilms.map((film, index) => ({
-      ...film,
-      index,
-    }));
-
-    return res.status(200).json({
-      success: true,
-      data: topFilmsWithIndex,
-    });
-  } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-export const editFilms = async (req, res) => {
-  try {
-    const { _id } = req.params;
-    const { name, nameEnglish, category, release_date, duration, country } =
-      req.body;
-
-    const film = await filmModel.findOne({ _id });
-    if (!film) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Không tìm thấy phim" });
-    }
-
-    if (name !== undefined) film.name = formatString(name);
-    if (nameEnglish !== undefined) film.nameEnglish = formatString(nameEnglish);
-    if (release_date !== undefined)
-      film.release_date = formatString(release_date);
-    if (duration !== undefined) film.duration = formatString(duration);
-    if (country !== undefined) film.country = formatString(country);
-    if (category !== undefined) {
-      film.category = category;
-    }
-
+export const editFilms = asyncHandler(async (req, res) => {
+    const film = await findFilm(req.params._id);
+    Object.assign(film, pickFilm(req.body));
     if (req.file) {
-      if (film.imagePublicId) {
-        await cloudinary.uploader.destroy(film.imagePublicId);
-      }
-      film.image = req.file.path;
-      film.imagePublicId = req.file.filename;
+        await destroyImage(film.imagePublicId);
+        film.image = req.file.path;
+        film.imagePublicId = req.file.filename;
     }
+    await film.save();
+    ok(res, film, 'Cập nhật thành công');
+});
 
-    await film.save(); // Lưu thay đổi vào database
-
-    return res.status(200).json({
-      success: true,
-      message: "Cập nhật thành công",
-      data: film,
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-export const deleteFilm = async (req, res) => {
-  try {
-    const { _id } = req.params;
-
-    const film = await filmModel.findOne({ _id });
-    if (!film) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Phim không tồn tại" });
-    }
-
-    // Xóa ảnh nếu tồn tại
-    if (film.imagePublicId) {
-      await cloudinary.uploader.destroy(film.imagePublicId);
-    }
-
-    // Xóa phim khỏi database
-    const result = await filmModel.deleteOne({ _id });
-    if (result.deletedCount === 0) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Phim không tồn tại" });
-    }
-
-    return res
-      .status(200)
-      .json({ success: true, message: "Xóa phim thành công" });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
+export const deleteFilm = asyncHandler(async (req, res) => {
+    const film = await findFilm(req.params._id);
+    await destroyImage(film.imagePublicId);
+    await film.deleteOne();
+    ok(res, null, 'Xóa phim thành công');
+});

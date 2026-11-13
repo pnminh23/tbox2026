@@ -1,12 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import styles from './InvoicesManage.module.scss';
-import {
-    editBooking,
-    useAllBookings,
-    useAllBookingsByDate,
-    useAllBookingsByMonth,
-    useBookingById,
-} from '@/services/booking';
+import { useAllBookings, useAllBookingsByDate, useAllBookingsByMonth, useBookingById } from '@/services/booking';
 import Table from '@/components/common/Table';
 import Pagination from '@/components/common/Pagonation';
 import { AiOutlineDelete, AiOutlineEye, AiOutlineSearch } from 'react-icons/ai';
@@ -17,7 +11,7 @@ import Input from '@/components/common/Input';
 import { useAllFilms } from '@/services/films';
 import dayjs from 'dayjs';
 import { formatMoney } from '@/function/formatMoney';
-import { toast } from 'react-toastify';
+import useBookingActions from '@/hooks/useBookingActions';
 import Calendar from '@/components/common/Calender';
 
 const InvoicesManage = () => {
@@ -33,7 +27,6 @@ const InvoicesManage = () => {
     const { bookings } = useAllBookings();
     const { booking, mutate: mutateBookingbyId } = useBookingById(selectedBookingId);
     const { bookings: bookingsByDate } = useAllBookingsByDate(selectedDate);
-    console.log('selectedMonth: ', selectedMonth);
     const { bookings: bookingsByMonth } = useAllBookingsByMonth(selectedMonth);
     const { films } = useAllFilms();
 
@@ -56,7 +49,7 @@ const InvoicesManage = () => {
                 b.phone?.toLowerCase().includes(query) ||
                 b.room?.name?.toLowerCase().includes(query) ||
                 b.status?.toLowerCase().includes(query) ||
-                b.isPay?.toLowerCase().includes(query)
+                b.isPay?.toLowerCase().includes(query),
         );
     }, [filteredData, activeSearchQuery]);
 
@@ -81,39 +74,9 @@ const InvoicesManage = () => {
     const handleGetBooking = (_id) => {
         setSelectedBookingId(_id);
         setIsPopupEdit(true);
-        console.log('booking by id: ',booking)
     };
 
-    const handleCancelBooking = async () => {
-        if (!booking) return;
-        if (!window.confirm(`Bạn có chắc muốn hủy đơn hàng "${booking._id}" không?`)) return;
-
-        try {
-            const result = await editBooking(booking._id, { status: 'HỦY' });
-            if (result.success) {
-                toast.success('Đã hủy đơn đặt phòng thành công!');
-                mutateBookingbyId();
-            }
-        } catch (error) {
-            toast.error(error.message || 'Có lỗi xảy ra khi hủy đơn.');
-            console.error(error);
-        }
-    };
-
-    const handleCompleteBooking = async () => {
-        if (!booking) return;
-
-        try {
-            const result = await editBooking(booking._id, { status: 'HOÀN THÀNH', isPay: 'ĐÃ THANH TOÁN' });
-            if (result.success) {
-                toast.success('Đã hoàn tất đơn đặt phòng!');
-                mutateBookingbyId();
-            }
-        } catch (error) {
-            toast.error(error.message || 'Có lỗi xảy ra khi hoàn tất đơn.');
-            console.error(error);
-        }
-    };
+    const { cancel, complete } = useBookingActions(booking, mutateBookingbyId);
 
     const handlePerformSearch = () => {
         setActiveSearchQuery(searchInput);
@@ -211,12 +174,12 @@ const InvoicesManage = () => {
                             </div>
                             <div className={styles.row}>
                                 {booking?.status !== 'ĐÃ HỦY' && (
-                                    <Button rounded_10 red w_fit onClick={handleCancelBooking}>
+                                    <Button rounded_10 red w_fit onClick={cancel}>
                                         Hủy đơn
                                     </Button>
                                 )}
 
-                                <Button rounded_10 yellowLinear w_fit onClick={handleCompleteBooking}>
+                                <Button rounded_10 yellowLinear w_fit onClick={complete}>
                                     Hoàn tất đơn đặt
                                 </Button>
                             </div>

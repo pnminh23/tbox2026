@@ -11,6 +11,8 @@ import {
     getTop10MostBookedFilms,
 } from '../controllers/filmController.js';
 import { uploader } from '../config/cloudinary.js';
+import { requireAdmin } from '../middlewares/authMiddleware.js';
+
 const FilmRouter = express.Router();
 
 FilmRouter.get('/get-all', getAllFilms);
@@ -19,8 +21,8 @@ FilmRouter.get('/get-film-by-category', getFilmsByCategory);
 FilmRouter.get('/get-film-by-year', getFilmsByYear);
 FilmRouter.get('/get-top10-film', getTop10MostBookedFilms);
 FilmRouter.get('/get-film/:_id', getFilmById);
-FilmRouter.post('/create-film', uploader.single('image'), createFilm);
-FilmRouter.put('/edit-film/:_id', uploader.single('image'), editFilms);
-FilmRouter.delete('/delete-film/:_id', deleteFilm);
+FilmRouter.post('/create-film', requireAdmin, uploader.single('image'), createFilm);
+FilmRouter.put('/edit-film/:_id', requireAdmin, uploader.single('image'), editFilms);
+FilmRouter.delete('/delete-film/:_id', requireAdmin, deleteFilm);
 
 export default FilmRouter;

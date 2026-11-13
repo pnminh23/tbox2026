@@ -37,7 +37,7 @@ import dynamic from "next/dynamic";
 // Thay thế bằng:
 const DynamicLoadingItem = dynamic(
     () => import("@/components/common/LoadingItem/LoadingItem"),
-    { ssr: false }
+    { ssr: false },
 );
 const Home = () => {
     // const { films, isLoadingAllFimls, isErrorAllFimls, mutateFilms } = useAllFilms();
@@ -167,8 +167,7 @@ const Home = () => {
                                     vệ sinh sạch sẽ <AiOutlineCheck />
                                 </li>
                                 <li>
-                                    bảo mật riêng tư cam kết 100&percnt; ko
-                                    camera
+                                    bảo mật riêng tư cam kết 100% không camera
                                     <AiOutlineCheck />
                                 </li>
                                 <li>

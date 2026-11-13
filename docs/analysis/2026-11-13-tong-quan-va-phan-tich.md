@@ -37,6 +37,10 @@ _Ngày: 13/11/2026 — đọc toàn bộ code, chạy UI với mock API để ki
 
 ## B3. Phân tích chức năng — lỗi, rủi ro, thiếu sót
 
+> **Trạng thái (13/11/2026):** đã sửa toàn bộ mục 🔴 🟠 🟡 ⚪ bên dưới, trừ phần "Thiếu (gợi ý bổ sung)" và thiết kế lại giao diện (để dành cho đợt redesign).
+> Riêng S7: code đã bỏ secret khỏi FE, nhưng **secret cũ đã nằm trong lịch sử git → phải đổi `JWT_SECRET` trên server**.
+> `useStyleClass` thực ra vẫn được dùng (Button, Input…) nên giữ lại. `register` với email chưa xác thực: giờ ghi đè hồ sơ cũ thay vì xóa.
+
 Mức độ: 🔴 nghiêm trọng · 🟠 cao · 🟡 trung bình · ⚪ nhỏ/dọn dẹp
 
 ### 🔴 Bảo mật — API gần như không có phân quyền

@@ -1,88 +1,39 @@
 import { formatMoney } from '@/function/formatMoney';
 import styles from './BookingDetail.module.scss';
-import dayjs from 'dayjs';
 import Button from '@/components/common/Button';
 import { PATH } from '@/constants/config';
 import Input from '@/components/common/Input';
 import { AiOutlineCheckCircle, AiOutlineCloseCircle, AiOutlineRight } from 'react-icons/ai';
 import Link from 'next/link';
-import { createPayment } from '@/services/payment';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import Popup from '@/components/common/Popup/Popup';
-import { toast } from 'react-toastify';
-import { editBooking } from '@/services/booking';
+import useBookingActions from '@/hooks/useBookingActions';
+import { useUserData } from '@/services/account';
+import { canCustomerCancel, canPay } from '@/constants/booking';
 
 const BookingDetail = ({ booking }) => {
     const router = useRouter();
     const { status } = router.query;
     const [isPopupPaymentVisible, setIsPopupPaymentVisible] = useState(false);
 
-    
     const [paymentResultStatus, setPaymentResultStatus] = useState(null);
 
-    
     useEffect(() => {
-        
         if (status) {
-            
             setPaymentResultStatus(status);
 
-            
             setIsPopupPaymentVisible(true);
 
             // Dọn dẹp URL (xóa query param).
             const cleanUrl = `/bookRoom/${booking?.id_booking}`;
             router.replace(cleanUrl, undefined, { shallow: true });
         }
-    }, [status, booking?.id_booking, router]); 
+    }, [status, booking?.id_booking, router]);
 
-    const handlePayment = async () => {
-        const expiredAt = dayjs().add(5, 'minute').unix();
-
-        const newPayment = {
-            id_booking: booking?.id_booking,
-            email: booking?.email,
-            amount: booking?.payment_amount || 0,
-            description: `${booking?.id_booking}`,
-            returnUrl: `http://localhost:3000/bookRoom/${booking?.id_booking}`,
-            cancelUrl: `http://localhost:3000/bookRoom/${booking?.id_booking}`,
-            expiredAt,
-        };
-        console.log('newPayment: ', newPayment);
-        try {
-            const result = await createPayment(newPayment); 
-            if (result?.checkoutUrl) {
-                window.location.href = result.checkoutUrl; 
-            } else {
-                toast.error('Không lấy được link thanh toán!');
-            }
-        } catch (error) {
-            console.error('Lỗi khi tạo đơn hàng:', error);
-            toast.error('Có lỗi xảy ra khi khởi tạo thanh toán!');
-        }
-    };
-
-    const handleCancelBooking = async () => {
-        if (!booking) return; 
-
-        // Thêm một bước xác nhận trước khi hủy
-        if (!window.confirm(`Bạn có chắc muốn hủy đơn hàng "${booking.id_booking}" không?`)) {
-            return;
-        }
-
-        try {
-            const result = await editBooking(booking._id, {
-                status: 'ĐÃ HỦY',
-            });
-            if (result.success) {
-                toast.success('Đã hủy đơn đặt phòng thành công!');
-            }
-        } catch (error) {
-            toast.error(error.message || 'Có lỗi xảy ra khi hủy đơn.');
-            console.error(error);
-        }
-    };
+    const { cancel, pay } = useBookingActions(booking);
+    const { user } = useUserData();
+    const isOwner = !!user && user.email === booking?.email;
 
     return (
         <div className="container">
@@ -188,16 +139,18 @@ const BookingDetail = ({ booking }) => {
                     </div>
 
                     <div className={styles.row}>
-                        <Button rounded_10 red w_fit onClick={handleCancelBooking}>
-                            Hủy đơn
-                        </Button>
-                        {booking?.isPay === 'ĐÃ THANH TOÁN' ? (
-                            <Button rounded_10 yellowLinear w_fit href={PATH.Overview}>
-                                Trang quản lý
+                        {isOwner && canCustomerCancel(booking) && (
+                            <Button rounded_10 red w_fit onClick={cancel}>
+                                Hủy đơn
+                            </Button>
+                        )}
+                        {canPay(booking) ? (
+                            <Button rounded_10 yellowLinear w_fit onClick={() => pay()}>
+                                Thanh toán
                             </Button>
                         ) : (
-                            <Button rounded_10 yellowLinear w_fit onClick={handlePayment}>
-                                Thanh toán
+                            <Button rounded_10 yellowLinear w_fit href={PATH.InvoiceDetail}>
+                                Lịch sử đặt phòng
                             </Button>
                         )}
                     </div>

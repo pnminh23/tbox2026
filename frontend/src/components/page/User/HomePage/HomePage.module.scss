@@ -268,3 +268,12 @@
         height: 300px !important;
     }
 }
+
+// Mobile: ô chọn cơ sở xuống dòng riêng thay vì đè lên tiêu đề slider
+@media screen and (max-width: 768px) {
+    .roomByBranch select {
+        position: static;
+        width: 100%;
+        margin: 10px 0 0;
+    }
+}

@@ -31,10 +31,7 @@ const AccountBadge = ({ user }) => {
     const handleLogout = async () => {
         try {
             await logout();
-
-            setTimeout(() => {
-                router.push(PATH.Login);
-            }, 2000);
+            router.push(PATH.Login);
         } catch (error) {
             toast.error('Lỗi khi đăng xuất!', { autoClose: 2000 });
         }

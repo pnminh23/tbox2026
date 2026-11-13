@@ -19,9 +19,6 @@ const OverviewPage = () => {
     const { booking: allBookingCurrent } = useAllBookingByEmailCurrent();
     const { booking: bookingStats } = useBookingStatsByEmail();
 
-    console.log('allBookingCurrent: ', allBookingCurrent);
-    console.log('bookingStats: ', bookingStats);
-
     return (
         <div className={styles.container}>
             <div className={styles.statistics}>

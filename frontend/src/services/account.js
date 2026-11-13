@@ -1,106 +1,84 @@
 import useSWR, { mutate } from "swr";
-import axiosInstance from "../config/axios";
-import { AsyncCompiler } from "sass";
+import axiosInstance, { fetcher } from "../config/axios";
 
 const API_URL = `/api/account`;
+export const USER_ENDPOINT = `${API_URL}/data`;
+const ALL_ENDPOINT = `${API_URL}/all-account-data`;
+const multipart = { headers: { "Content-Type": "multipart/form-data" } };
 
-const fetcher = (url) => axiosInstance.get(url).then((res) => res.data);
+// Gọi API, ném lại response lỗi của server để component hiển thị message
+const request = (promise, fallback) =>
+    promise
+        .then((res) => res.data)
+        .catch((err) => {
+            throw err.response?.data || { success: false, message: fallback };
+        });
 
+// Người dùng hiện tại; null nếu chưa đăng nhập
 export const useUserData = () => {
-    const { data, error, isLoading } = useSWR(`${API_URL}/data`, fetcher, {
-        shouldRetryOnError: false, // tránh retry nếu không cần
-        revalidateOnFocus: false, // tránh refetch mỗi lần quay lại tab
-        refreshInterval: 5000,
+    const { data, error, isLoading } = useSWR(USER_ENDPOINT, fetcher, {
+        shouldRetryOnError: false,
+        revalidateOnFocus: true,
     });
-
-    return {
-        user: data?.data, // giống như response.data.data trong axios
-        isLoading,
-        isError: error,
-    };
+    return { user: data?.data, isLoading, isError: error };
 };
 
-export const useAllAccounts = () => {
-    const endpoint = `${API_URL}/all-account-data`;
-    const { data, error, isLoading } = useSWR(endpoint, fetcher, {
-        shouldRetryOnError: true,
-        revalidateOnFocus: true,
-        refreshInterval: 5000,
-    });
+export const refreshUser = () => mutate(USER_ENDPOINT);
 
-    const mutateAccounts = () => mutate(endpoint);
+export const updateMe = async (formData) => {
+    const res = await request(
+        axiosInstance.put(`${API_URL}/me`, formData, multipart),
+        "Cập nhật thất bại",
+    );
+    await refreshUser();
+    return res;
+};
+
+/* ---------- Admin ---------- */
+
+export const useAllAccounts = () => {
+    const { data, error, isLoading } = useSWR(ALL_ENDPOINT, fetcher, {
+        revalidateOnFocus: true,
+    });
     return {
         accounts: data?.data,
         isLoading,
         isError: error,
-        mutateAccounts,
+        mutateAccounts: () => mutate(ALL_ENDPOINT),
     };
 };
 
-export const toggleLock = async (email) => {
-    try {
-        const res = await axiosInstance.post(`${API_URL}/toggle-lock`, {
-            email,
-        });
-        return res.data; // trả về data để frontend xử lý nếu cần
-    } catch (err) {
-        throw (
-            err.response?.data || {
-                success: false,
-                message: "Đã xảy ra lỗi khi toggle lock",
-            }
-        );
-    }
-};
-
-export const useAccountByEmail = (_Email) => {
-    const endpoint = `${API_URL}/account-by-email/${_Email}`;
-    const { data, error, isLoading } = useSWR(endpoint, fetcher, {
-        shouldRetryOnError: true,
-        revalidateOnFocus: true,
-    });
-
-    const mutate = () => mutate(endpoint);
-    return {
-        account: data?.data,
-        isLoading,
+export const useAccountByEmail = (email) => {
+    const endpoint = email
+        ? `${API_URL}/account-by-email/${encodeURIComponent(email)}`
+        : null;
+    const {
+        data,
         error,
-        mutate,
-    };
+        isLoading,
+        mutate: revalidate,
+    } = useSWR(endpoint, fetcher);
+    return { account: data?.data, isLoading, error, mutate: revalidate };
 };
 
-export const editAccountByEmail = async (email, formData) => {
-    try {
-        const res = await axiosInstance.put(
+export const toggleLock = (email) =>
+    request(
+        axiosInstance.post(`${API_URL}/toggle-lock`, { email }),
+        "Đã xảy ra lỗi khi khóa tài khoản",
+    );
+
+export const editAccountByEmail = (email, formData) =>
+    request(
+        axiosInstance.put(
             `${API_URL}/edit-account-by-email/${encodeURIComponent(email)}`,
             formData,
-            {
-                headers: {
-                    "Content-Type": "multipart/form-data",
-                },
-            }
-        );
-        return res.data; // trả về data để frontend xử lý nếu cần
-    } catch (err) {
-        throw (
-            err.response?.data || {
-                success: false,
-                message: "Đã xảy ra lỗi khi chỉnh sửa account",
-            }
-        );
-    }
-};
+            multipart,
+        ),
+        "Đã xảy ra lỗi khi chỉnh sửa tài khoản",
+    );
 
-export const deleteAccountByEmail = async (email) => {
-    try {
-        const res = await axiosInstance.delete(`${API_URL}/delete/${email}`);
-        return res.data; // trả về data để frontend xử lý nếu cần
-    } catch (err) {
-        throw (
-            err.response?.data || {
-                success: false,
-                message: "Đã xảy ra lỗi khi xóa account",
-            }
-        );
-    }
-};
+export const deleteAccountByEmail = (email) =>
+    request(
+        axiosInstance.delete(`${API_URL}/delete/${encodeURIComponent(email)}`),
+        "Đã xảy ra lỗi khi xóa tài khoản",
+    );

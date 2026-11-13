@@ -1,9 +1,7 @@
 import useSWR, { mutate } from "swr";
-import axiosInstance from "../config/axios";
+import axiosInstance, { fetcher } from "../config/axios";
 
 const API_URL = `/api/film`;
-
-const fetcher = (url) => axiosInstance.get(url).then((res) => res.data);
 
 export const categoryFilms = [
     "Tâm Lý ",
@@ -112,7 +110,7 @@ export const createFilm = async (formData) => {
                 headers: {
                     "Content-Type": "multipart/form-data",
                 },
-            }
+            },
         );
         return res.data; // trả về response data để frontend xử lý
     } catch (err) {
@@ -152,7 +150,7 @@ export const editFilmById = async (_id, formData) => {
                 headers: {
                     "Content-Type": "multipart/form-data",
                 },
-            }
+            },
         );
         return res.data; // trả về data để frontend xử lý nếu cần
     } catch (err) {

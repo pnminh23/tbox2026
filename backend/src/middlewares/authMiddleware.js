@@ -1,33 +1,43 @@
 import jwt from 'jsonwebtoken';
-import { env } from '../config/enviroment.js';
+import { env } from '../config/env.js';
+import accountModel from '../models/accountModel.js';
+import { HttpError } from '../utils/http.js';
 
-const authMiddleware = async (req, res, next) => {
-    const { token } = req.cookies;
+const readToken = (req) => req.cookies?.token || req.headers.authorization?.replace(/^Bearer /, '');
 
-    if (!token) {
-        return res.status(401).json({
-            success: false,
-            message: 'Not authorized. Login again',
-        });
-    }
-
+// Gắn req.user = { id, email, role } nếu token hợp lệ và tài khoản còn hoạt động
+const resolveUser = async (req) => {
+    const token = readToken(req);
+    if (!token) return null;
     try {
-        const tokenDecode = jwt.verify(token, env.JWT_SECRET);
-
-        if (!tokenDecode.id) {
-            return res.status(401).json({ success: false, message: 'Not Authorized. Login again' });
-        }
-
-        req.body.accountId = tokenDecode.id;
-        req.body.role = tokenDecode.role;
-
-        next();
-    } catch (error) {
-        res.status(401).json({
-            success: false,
-            message: error.message,
-        });
+        const { id } = jwt.verify(token, env.JWT_SECRET);
+        const account = await accountModel.findById(id, 'email role isLock').lean();
+        if (!account || account.isLock) return null;
+        return { id: String(account._id), email: account.email, role: account.role };
+    } catch {
+        return null;
     }
 };
 
-export default authMiddleware;
+export const optionalAuth = async (req, res, next) => {
+    req.user = await resolveUser(req);
+    next();
+};
+
+export const requireAuth = async (req, res, next) => {
+    req.user = await resolveUser(req);
+    next(req.user ? undefined : new HttpError(401, 'Vui lòng đăng nhập lại'));
+};
+
+export const requireRole =
+    (...roles) =>
+    (req, res, next) =>
+        requireAuth(req, res, (err) =>
+            next(
+                err || (roles.includes(req.user.role) ? undefined : new HttpError(403, 'Bạn không có quyền truy cập')),
+            ),
+        );
+
+export const requireAdmin = requireRole('admin');
+
+export const isAdmin = (user) => user?.role === 'admin';

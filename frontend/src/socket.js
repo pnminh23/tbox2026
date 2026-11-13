@@ -1,5 +1,4 @@
 import { io } from 'socket.io-client';
+import { API_URL } from './config/axios';
 
-export const socket = io('http://localhost:2911', {
-    withCredentials: true,
-});
+export const socket = io(API_URL, { withCredentials: true });

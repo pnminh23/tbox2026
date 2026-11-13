@@ -1,120 +1,80 @@
-import { formatString } from '../services/formatString.js';
 import roomModel from '../models/roomModel.js';
-import { cloudinary } from '../config/cloudinary.js';
+import bookingModel, { BOOKING_STATUS } from '../models/bookingModel.js';
+import { destroyImage } from '../config/cloudinary.js';
+import { asyncHandler, fail, ok } from '../utils/http.js';
+import { formatString } from '../utils/format.js';
+import { now } from '../utils/time.js';
+import { isAdmin } from '../middlewares/authMiddleware.js';
 
-export const createRoom = async (req, res) => {
-    const { branch, type, name, status } = req.body;
-    if (!name || !branch || !type)
-        return res.status(400).json({ success: false, message: 'Hãy nhập đẩy đủ các trường' });
-    if (!req.file) {
-        return res.status(400).json({ success: false, message: 'Thiếu ảnh' });
-    }
-    const existingRoom = await roomModel.findOne({ branch, name });
-    if (existingRoom) return res.status(400).json({ success: false, message: 'Phòng  này đã tồn tại' });
-    try {
-        const imageUrl = req.file.path;
-        const publicId = req.file.filename;
+const STATUSES = ['Active', 'Inactive'];
 
-        const newRoom = await roomModel.create({
-            branch,
-            type,
-            name: formatString(name).toUpperCase(),
-            image: imageUrl,
-            imagePublicId: publicId,
-            status,
-        });
-        return res.status(200).json({ success: true, message: 'Thêm phòng thành công' });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
+const findRoom = async (_id) => {
+    const room = await roomModel.findById(_id);
+    if (!room) fail(404, 'Không tìm thấy phòng');
+    return room;
 };
 
-export const editRoom = async (req, res) => {
-    const { _id } = req.params;
-    try {
-        const { name, image } = req.body;
-        const room = await roomModel.findOne({ _id });
-        if (!room) {
-            return res.status(400).json({ success: false, message: 'Không tìm thấy phòng' });
-        }
-
-        if (name !== undefined) room.name = formatString(name);
-
-        if (req.file) {
-            if (room.imagePublicId) {
-                await cloudinary.uploader.destroy(room.imagePublicId);
-            }
-            room.image = req.file.path;
-            room.imagePublicId = req.file.filename;
-        }
-        await room.save();
-
-        res.status(200).json({ message: 'Cập nhật phòng thành công.', data: room });
-    } catch (error) {
-        res.status(500).json({ message: 'Lỗi server.', error: error.message });
-    }
+const pickStatus = (status) => {
+    if (status === undefined) return undefined;
+    if (!STATUSES.includes(status)) fail(400, 'Trạng thái phòng không hợp lệ');
+    return status;
 };
 
-export const getRoom = async (req, res) => {
-    try {
-        const { branch, type } = req.params;
-        if (!branch || !type) return res.status(400).json({ success: false, message: 'Hãy nhập đẩy đủ các trường' });
+export const createRoom = asyncHandler(async (req, res) => {
+    const { branch, type } = req.body;
+    const name = formatString(req.body.name).toUpperCase();
+    if (!name || !branch || !type) fail(400, 'Hãy nhập đầy đủ các trường');
+    if (!req.file) fail(400, 'Thiếu ảnh');
+    if (await roomModel.exists({ branch, name })) fail(409, 'Phòng này đã tồn tại');
 
-        const rooms = await roomModel.find({ branch, type }).populate('type');
+    const room = await roomModel.create({
+        branch,
+        type,
+        name,
+        status: pickStatus(req.body.status),
+        image: req.file.path,
+        imagePublicId: req.file.filename,
+    });
+    ok(res, room, 'Thêm phòng thành công', 201);
+});
 
-        if (rooms.length === 0)
-            return res.status(400).json({
-                success: false,
-                message: 'Không có phòng nào trong cơ sở dữ liệu',
-            });
+export const editRoom = asyncHandler(async (req, res) => {
+    const room = await findRoom(req.params._id);
+    const { name, type, status } = req.body;
 
-        return res.status(200).json({
-            success: true,
-            data: rooms,
-        });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+    if (name) room.name = formatString(name).toUpperCase();
+    if (type) room.type = type;
+    if (status !== undefined) room.status = pickStatus(status);
+    if (req.file) {
+        await destroyImage(room.imagePublicId);
+        room.image = req.file.path;
+        room.imagePublicId = req.file.filename;
     }
-};
+    await room.save();
+    ok(res, room, 'Cập nhật phòng thành công');
+});
 
-export const getRoomByBranchId = async (req, res) => {
-    try {
-        const { branch } = req.params;
-        if (!branch) return res.status(400).json({ success: false, message: 'Hãy nhập đẩy đủ các trường' });
+// Khách chỉ thấy phòng đang hoạt động; admin thấy tất cả
+export const getRoom = asyncHandler(async (req, res) => {
+    const { branch, type } = req.params;
+    const filter = isAdmin(req.user) ? { branch, type } : { branch, type, status: 'Active' };
+    ok(res, await roomModel.find(filter).populate('type').sort({ name: 1 }));
+});
 
-        const rooms = await roomModel.find({ branch }).populate('type').sort({ name: 1 });
+export const getRoomByBranchId = asyncHandler(async (req, res) => {
+    ok(res, await roomModel.find({ branch: req.params.branch }).populate('type').sort({ name: 1 }));
+});
 
-        if (rooms.length === 0)
-            return res.status(400).json({
-                success: false,
-                message: 'Không có phòng nào trong cơ sở dữ liệu',
-            });
+export const deleteRoom = asyncHandler(async (req, res) => {
+    const room = await findRoom(req.params._id);
+    const upcoming = await bookingModel.exists({
+        room: room._id,
+        date: { $gte: now().startOf('day').toDate() },
+        status: { $in: [BOOKING_STATUS.SUCCESS, BOOKING_STATUS.PENDING] },
+    });
+    if (upcoming) fail(400, 'Phòng còn đơn đặt sắp tới, hãy chuyển sang "Inactive" thay vì xóa');
 
-        return res.status(200).json({
-            success: true,
-            data: rooms,
-        });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-};
-
-export const deleteRoom = async (req, res) => {
-    try {
-        const { _id } = req.params;
-        const room = await roomModel.findOne({ _id });
-        if (!room) {
-            return res.status(400).json({ success: false, message: 'phòng này không tồn tại' });
-        }
-
-        if (room.imagePublicId) {
-            await cloudinary.uploader.destroy(room.imagePublicId);
-        }
-
-        const result = await roomModel.deleteOne({ _id });
-
-        return res.status(200).json({ success: true, message: 'Xóa phòng thành công' });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-};
+    await destroyImage(room.imagePublicId);
+    await room.deleteOne();
+    ok(res, null, 'Xóa phòng thành công');
+});

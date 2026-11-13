@@ -3,7 +3,7 @@ import style from "./AccountPage.module.scss";
 import { toast } from "react-toastify";
 
 // Services & Hooks
-import { editAccountByEmail, useAccountByEmail } from "@/services/account";
+import { updateMe, useUserData } from "@/services/account";
 
 // Components
 import Button from "@/components/common/Button";
@@ -18,12 +18,11 @@ const DynamicLoadingFullPage = dynamic(
     {
         ssr: false, // Tùy chọn QUAN TRỌNG nhất
         loading: () => null, // Optional: có thể trả về null hoặc một div trống trong lúc chờ load
-    }
+    },
 );
 
 const AccountPage = () => {
-    // === State Management ===
-    const [email, setEmail] = useState(null); // Bắt đầu với null
+    const { user: account, isLoading, isError } = useUserData();
     const [editFile, setEditFile] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [editAccount, setEditAccount] = useState({
@@ -33,19 +32,7 @@ const AccountPage = () => {
         image: "",
     });
 
-    // 1. LẤY EMAIL TỪ LOCALSTORAGE KHI COMPONENT MOUNT
-    useEffect(() => {
-        const storedEmail = localStorage.getItem("email");
-        if (storedEmail) {
-            setEmail(storedEmail);
-        }
-    }, []);
-
-    // 2. GỌI HOOK SWR ĐỂ LẤY DỮ LIỆU TÀI KHOẢN
-    // Hook sẽ tự động chạy khi `email` có giá trị
-    const { account, isLoading, isError } = useAccountByEmail(email);
-
-    // 3. useEffect NÀY SẼ TỰ ĐỘNG ĐIỀN FORM KHI CÓ DỮ LIỆU TỪ HOOK
+    // Điền form khi có dữ liệu tài khoản
     useEffect(() => {
         if (account) {
             setEditAccount({
@@ -57,37 +44,25 @@ const AccountPage = () => {
         }
     }, [account]);
 
-    // 4. HÀM XỬ LÝ CẬP NHẬT
     const handleEdit = async (e) => {
         e.preventDefault();
-        if (!email) return;
-
         setIsSubmitting(true);
         try {
             const formData = new FormData();
             formData.append("name", editAccount.name);
             formData.append("phone", editAccount.phone);
-            if (editFile) {
-                formData.append("image", editFile);
-            }
+            if (editFile) formData.append("image", editFile);
 
-            const response = await editAccountByEmail(email, formData);
-
-            if (response.success) {
-                toast.success("Cập nhật tài khoản thành công!");
-                setEditFile(null); // Reset file đã chọn
-            } else {
-                toast.error(response.message || "Cập nhật thất bại.");
-            }
+            await updateMe(formData);
+            toast.success("Cập nhật tài khoản thành công!");
+            setEditFile(null);
         } catch (err) {
-            console.error(err);
-            toast.error("Đã xảy ra lỗi khi cập nhật!");
+            toast.error(err.message || "Cập nhật thất bại");
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    // 5. XỬ LÝ TRẠNG THÁI LOADING VÀ ERROR
     if (isLoading) {
         return <DynamicLoadingFullPage />;
     }
